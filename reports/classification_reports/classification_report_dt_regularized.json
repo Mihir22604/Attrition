@@ -1,0 +1,50 @@
+{
+    "model_name": "Decision Tree (Regularized & Balanced)",
+    "short_name": "dt_regularized",
+    "test_sample_size": 294,
+    "test_class_distribution": {
+        "0": 247,
+        "1": 47
+    },
+    "metrics_summary": {
+        "accuracy": 0.7210884353741497,
+        "roc_auc": 0.6885175295029718,
+        "precision_attrition_yes": 0.29411764705882354,
+        "recall_attrition_yes": 0.5319148936170213,
+        "f1_attrition_yes": 0.3787878787878788
+    },
+    "confusion_matrix": {
+        "true_negatives": 187,
+        "false_positives": 60,
+        "false_negatives": 22,
+        "true_positives": 25
+    },
+    "classification_report_standard": {
+        "Retained (0)": {
+            "precision": 0.8947368421052632,
+            "recall": 0.757085020242915,
+            "f1-score": 0.8201754385964912,
+            "support": 247.0
+        },
+        "Departed (1)": {
+            "precision": 0.29411764705882354,
+            "recall": 0.5319148936170213,
+            "f1-score": 0.3787878787878788,
+            "support": 47.0
+        },
+        "accuracy": 0.7210884353741497,
+        "macro avg": {
+            "precision": 0.5944272445820433,
+            "recall": 0.6444999569299681,
+            "f1-score": 0.599481658692185,
+            "support": 294.0
+        },
+        "weighted avg": {
+            "precision": 0.798719487795118,
+            "recall": 0.7210884353741497,
+            "f1-score": 0.7496134817563389,
+            "support": 294.0
+        }
+    },
+    "raw_text_report": "              precision    recall  f1-score   support\n\nRetained (0)     0.8947    0.7571    0.8202       247\nDeparted (1)     0.2941    0.5319    0.3788        47\n\n    accuracy                         0.7211       294\n   macro avg     0.5944    0.6445    0.5995       294\nweighted avg     0.7987    0.7211    0.7496       294\n"
+}

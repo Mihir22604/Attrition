@@ -1,0 +1,186 @@
+{
+    "project": "AttritionIQ \u2014 Intelligent Employee Attrition Prediction System",
+    "task": "Task 6 - Model Evaluation & Comparison",
+    "population": {
+        "train_records": 1176,
+        "test_records": 294
+    },
+    "models": {
+        "Decision Tree (Unconstrained)": {
+            "display_name": "Decision Tree (Unconstrained)",
+            "short_name": "dt_unconstrained",
+            "metrics": {
+                "train_accuracy": 1.0,
+                "test_accuracy": 0.7653061224489796,
+                "accuracy_gap_pct": 23.469387755102044,
+                "test_roc_auc": 0.6105177017830993,
+                "test_precision_class_1": 0.3103448275862069,
+                "test_recall_class_1": 0.3829787234042553,
+                "test_f1_class_1": 0.34285714285714286,
+                "true_positives": 18,
+                "false_negatives": 29,
+                "false_positives": 40,
+                "true_negatives": 207
+            },
+            "standard_classification_report": {
+                "Retained (0)": {
+                    "precision": 0.8771186440677966,
+                    "recall": 0.8380566801619433,
+                    "f1-score": 0.8571428571428571,
+                    "support": 247.0
+                },
+                "Departed (1)": {
+                    "precision": 0.3103448275862069,
+                    "recall": 0.3829787234042553,
+                    "f1-score": 0.34285714285714286,
+                    "support": 47.0
+                },
+                "accuracy": 0.7653061224489796,
+                "macro avg": {
+                    "precision": 0.5937317358270018,
+                    "recall": 0.6105177017830994,
+                    "f1-score": 0.6,
+                    "support": 294.0
+                },
+                "weighted avg": {
+                    "precision": 0.7865119455146173,
+                    "recall": 0.7653061224489796,
+                    "f1-score": 0.7749271137026239,
+                    "support": 294.0
+                }
+            }
+        },
+        "Decision Tree (Regularized & Balanced)": {
+            "display_name": "Decision Tree (Regularized & Balanced)",
+            "short_name": "dt_regularized",
+            "metrics": {
+                "train_accuracy": 0.7848639455782312,
+                "test_accuracy": 0.7210884353741497,
+                "accuracy_gap_pct": 6.3775510204081565,
+                "test_roc_auc": 0.6885175295029718,
+                "test_precision_class_1": 0.29411764705882354,
+                "test_recall_class_1": 0.5319148936170213,
+                "test_f1_class_1": 0.3787878787878788,
+                "true_positives": 25,
+                "false_negatives": 22,
+                "false_positives": 60,
+                "true_negatives": 187
+            },
+            "standard_classification_report": {
+                "Retained (0)": {
+                    "precision": 0.8947368421052632,
+                    "recall": 0.757085020242915,
+                    "f1-score": 0.8201754385964912,
+                    "support": 247.0
+                },
+                "Departed (1)": {
+                    "precision": 0.29411764705882354,
+                    "recall": 0.5319148936170213,
+                    "f1-score": 0.3787878787878788,
+                    "support": 47.0
+                },
+                "accuracy": 0.7210884353741497,
+                "macro avg": {
+                    "precision": 0.5944272445820433,
+                    "recall": 0.6444999569299681,
+                    "f1-score": 0.599481658692185,
+                    "support": 294.0
+                },
+                "weighted avg": {
+                    "precision": 0.798719487795118,
+                    "recall": 0.7210884353741497,
+                    "f1-score": 0.7496134817563389,
+                    "support": 294.0
+                }
+            }
+        },
+        "Random Forest (Balanced)": {
+            "display_name": "Random Forest (Balanced Ensemble)",
+            "short_name": "random_forest",
+            "metrics": {
+                "train_accuracy": 0.967687074829932,
+                "test_accuracy": 0.8231292517006803,
+                "accuracy_gap_pct": 14.45578231292517,
+                "test_roc_auc": 0.7660435868722543,
+                "test_precision_class_1": 0.44680851063829785,
+                "test_recall_class_1": 0.44680851063829785,
+                "test_f1_class_1": 0.44680851063829785,
+                "true_positives": 21,
+                "false_negatives": 26,
+                "false_positives": 26,
+                "true_negatives": 221
+            },
+            "standard_classification_report": {
+                "Retained (0)": {
+                    "precision": 0.8947368421052632,
+                    "recall": 0.8947368421052632,
+                    "f1-score": 0.8947368421052632,
+                    "support": 247.0
+                },
+                "Departed (1)": {
+                    "precision": 0.44680851063829785,
+                    "recall": 0.44680851063829785,
+                    "f1-score": 0.44680851063829785,
+                    "support": 47.0
+                },
+                "accuracy": 0.8231292517006803,
+                "macro avg": {
+                    "precision": 0.6707726763717805,
+                    "recall": 0.6707726763717805,
+                    "f1-score": 0.6707726763717805,
+                    "support": 294.0
+                },
+                "weighted avg": {
+                    "precision": 0.8231292517006803,
+                    "recall": 0.8231292517006803,
+                    "f1-score": 0.8231292517006803,
+                    "support": 294.0
+                }
+            }
+        },
+        "Logistic Regression (Balanced Baseline)": {
+            "display_name": "Logistic Regression (Balanced Baseline)",
+            "short_name": "logistic_regression",
+            "metrics": {
+                "train_accuracy": 0.7797619047619048,
+                "test_accuracy": 0.7551020408163265,
+                "accuracy_gap_pct": 2.4659863945578286,
+                "test_roc_auc": 0.8035145146007409,
+                "test_precision_class_1": 0.3563218390804598,
+                "test_recall_class_1": 0.6595744680851063,
+                "test_f1_class_1": 0.4626865671641791,
+                "true_positives": 31,
+                "false_negatives": 16,
+                "false_positives": 56,
+                "true_negatives": 191
+            },
+            "standard_classification_report": {
+                "Retained (0)": {
+                    "precision": 0.9227053140096618,
+                    "recall": 0.7732793522267206,
+                    "f1-score": 0.8414096916299559,
+                    "support": 247.0
+                },
+                "Departed (1)": {
+                    "precision": 0.3563218390804598,
+                    "recall": 0.6595744680851063,
+                    "f1-score": 0.4626865671641791,
+                    "support": 47.0
+                },
+                "accuracy": 0.7551020408163265,
+                "macro avg": {
+                    "precision": 0.6395135765450608,
+                    "recall": 0.7164269101559135,
+                    "f1-score": 0.6520481293970675,
+                    "support": 294.0
+                },
+                "weighted avg": {
+                    "precision": 0.8321610169971703,
+                    "recall": 0.7551020408163265,
+                    "f1-score": 0.7808655186711412,
+                    "support": 294.0
+                }
+            }
+        }
+    }
+}

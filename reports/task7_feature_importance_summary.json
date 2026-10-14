@@ -1,0 +1,193 @@
+{
+    "task": "Task 7 - Feature Importance & Interpretability",
+    "top_10_mdi": [
+        {
+            "feature": "MonthlyIncome",
+            "mdi_importance": 0.07566636971444347,
+            "mdi_std": 0.052439836881307524,
+            "rank_mdi": 1
+        },
+        {
+            "feature": "Age",
+            "mdi_importance": 0.07310406057120135,
+            "mdi_std": 0.051169363039514325,
+            "rank_mdi": 2
+        },
+        {
+            "feature": "TotalWorkingYears",
+            "mdi_importance": 0.07114091985950757,
+            "mdi_std": 0.05889860413312225,
+            "rank_mdi": 3
+        },
+        {
+            "feature": "OverTime_Yes",
+            "mdi_importance": 0.054711681834352294,
+            "mdi_std": 0.04091564184024222,
+            "rank_mdi": 4
+        },
+        {
+            "feature": "YearsAtCompany",
+            "mdi_importance": 0.049704074989356736,
+            "mdi_std": 0.04585914293767562,
+            "rank_mdi": 5
+        },
+        {
+            "feature": "DailyRate",
+            "mdi_importance": 0.04779444478987033,
+            "mdi_std": 0.030364004692635692,
+            "rank_mdi": 6
+        },
+        {
+            "feature": "YearsWithCurrManager",
+            "mdi_importance": 0.044888908137431835,
+            "mdi_std": 0.05214415845240947,
+            "rank_mdi": 7
+        },
+        {
+            "feature": "StockOptionLevel",
+            "mdi_importance": 0.04219084980618225,
+            "mdi_std": 0.035266147288575724,
+            "rank_mdi": 8
+        },
+        {
+            "feature": "NumCompaniesWorked",
+            "mdi_importance": 0.039845927997177205,
+            "mdi_std": 0.029599843445197574,
+            "rank_mdi": 9
+        },
+        {
+            "feature": "HourlyRate",
+            "mdi_importance": 0.03816265090888295,
+            "mdi_std": 0.02395979471008504,
+            "rank_mdi": 10
+        }
+    ],
+    "top_10_parent_mdi": [
+        {
+            "parent_feature": "MonthlyIncome",
+            "mdi_importance": 0.07566636971444347,
+            "rank_parent_mdi": 1
+        },
+        {
+            "parent_feature": "Age",
+            "mdi_importance": 0.07310406057120135,
+            "rank_parent_mdi": 2
+        },
+        {
+            "parent_feature": "TotalWorkingYears",
+            "mdi_importance": 0.07114091985950757,
+            "rank_parent_mdi": 3
+        },
+        {
+            "parent_feature": "OverTime",
+            "mdi_importance": 0.054711681834352294,
+            "rank_parent_mdi": 4
+        },
+        {
+            "parent_feature": "YearsAtCompany",
+            "mdi_importance": 0.049704074989356736,
+            "rank_parent_mdi": 5
+        },
+        {
+            "parent_feature": "JobRole",
+            "mdi_importance": 0.04944612445695927,
+            "rank_parent_mdi": 6
+        },
+        {
+            "parent_feature": "DailyRate",
+            "mdi_importance": 0.04779444478987033,
+            "rank_parent_mdi": 7
+        },
+        {
+            "parent_feature": "YearsWithCurrManager",
+            "mdi_importance": 0.044888908137431835,
+            "rank_parent_mdi": 8
+        },
+        {
+            "parent_feature": "StockOptionLevel",
+            "mdi_importance": 0.04219084980618225,
+            "rank_parent_mdi": 9
+        },
+        {
+            "parent_feature": "NumCompaniesWorked",
+            "mdi_importance": 0.039845927997177205,
+            "rank_parent_mdi": 10
+        }
+    ],
+    "top_10_permutation_roc_auc": [
+        {
+            "feature": "OverTime_Yes",
+            "perm_auc_mean": 0.07375312257731073,
+            "perm_auc_std": 0.011409140068305347,
+            "rank_perm_auc": 1,
+            "rank_mdi": 4
+        },
+        {
+            "feature": "StockOptionLevel",
+            "perm_auc_mean": 0.026513911620294615,
+            "perm_auc_std": 0.01035669405313311,
+            "rank_perm_auc": 2,
+            "rank_mdi": 8
+        },
+        {
+            "feature": "JobSatisfaction",
+            "perm_auc_mean": 0.014195882504953055,
+            "perm_auc_std": 0.006496902665961228,
+            "rank_perm_auc": 3,
+            "rank_mdi": 17
+        },
+        {
+            "feature": "MaritalStatus_Single",
+            "perm_auc_mean": 0.012740115427685411,
+            "perm_auc_std": 0.0039030004897830516,
+            "rank_perm_auc": 4,
+            "rank_mdi": 24
+        },
+        {
+            "feature": "DistanceFromHome",
+            "perm_auc_mean": 0.009819967266775791,
+            "perm_auc_std": 0.005551792264266642,
+            "rank_perm_auc": 5,
+            "rank_mdi": 11
+        },
+        {
+            "feature": "EnvironmentSatisfaction",
+            "perm_auc_mean": 0.0096692221552244,
+            "perm_auc_std": 0.006036438212515973,
+            "rank_perm_auc": 6,
+            "rank_mdi": 18
+        },
+        {
+            "feature": "PercentSalaryHike",
+            "perm_auc_mean": 0.007007494185545737,
+            "perm_auc_std": 0.003437007433684456,
+            "rank_perm_auc": 7,
+            "rank_mdi": 15
+        },
+        {
+            "feature": "TrainingTimesLastYear",
+            "perm_auc_mean": 0.006107330519424592,
+            "perm_auc_std": 0.0027014078840587553,
+            "rank_perm_auc": 8,
+            "rank_mdi": 20
+        },
+        {
+            "feature": "JobInvolvement",
+            "perm_auc_mean": 0.004845378585580174,
+            "perm_auc_std": 0.0037719980499917732,
+            "rank_perm_auc": 9,
+            "rank_mdi": 21
+        },
+        {
+            "feature": "YearsAtCompany",
+            "perm_auc_mean": 0.004031354983202684,
+            "perm_auc_std": 0.006798988903423867,
+            "rank_perm_auc": 10,
+            "rank_mdi": 5
+        }
+    ],
+    "methodological_insights": {
+        "cardinality_bias_explanation": "MDI measures the total reduction of Gini impurity brought by that feature across all tree splits. Because continuous variables with many unique values (e.g., MonthlyIncome, DailyRate, Age) offer numerous split opportunities, MDI systematically overvalues them compared to critical binary indicators. In contrast, Permutation Importance on the held-out test set reveals that permuting OverTime_Yes degrades discriminative power significantly (dROC-AUC = 0.0738), confirming OverTime as the single most potent generalization driver.",
+        "correlation_vs_causation_mandate": "Feature importance reflects statistical association within historical observational data and does NOT prove a causal relationship. High importance for features like TotalWorkingYears, MonthlyIncome, or OverTime indicates strong predictive signal for attrition risk, but organizational retention policies cannot assume that artificially increasing tenure or slightly adjusting daily rates will causally prevent turnover."
+    }
+}

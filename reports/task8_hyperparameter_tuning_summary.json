@@ -1,0 +1,67 @@
+{
+    "task": "Task 8 - Hyperparameter Optimization",
+    "model": "Random Forest Classifier",
+    "optimization_strategy": "GridSearchCV + Stratified 5-Fold Cross Validation (Scoring: F1)",
+    "best_hyperparameters": {
+        "class_weight": "balanced",
+        "max_depth": 6,
+        "min_samples_leaf": 4,
+        "min_samples_split": 4,
+        "n_estimators": 200
+    },
+    "best_cv_score_f1": 0.4729770269073237,
+    "comparison_before_vs_after": {
+        "test_accuracy": {
+            "baseline": 0.8197278911564626,
+            "tuned": 0.826530612244898,
+            "delta": 0.006802721088435382
+        },
+        "train_accuracy": {
+            "baseline": 0.9761904761904762,
+            "tuned": 0.9370748299319728,
+            "delta": -0.03911564625850339
+        },
+        "overfitting_gap_percentage": {
+            "baseline": 15.646258503401356,
+            "tuned": 11.054421768707478,
+            "delta": -4.591836734693878
+        },
+        "test_recall_attrition_yes": {
+            "baseline": 0.2127659574468085,
+            "tuned": 0.3829787234042553,
+            "delta": 0.1702127659574468,
+            "relative_boost_pct": 80.0
+        },
+        "test_precision_attrition_yes": {
+            "baseline": 0.38461538461538464,
+            "tuned": 0.45,
+            "delta": 0.06538461538461537,
+            "relative_boost_pct": 16.999999999999996
+        },
+        "test_f1_attrition_yes": {
+            "baseline": 0.273972602739726,
+            "tuned": 0.41379310344827586,
+            "delta": 0.13982050070854984,
+            "relative_boost_pct": 51.03448275862069
+        },
+        "test_roc_auc": {
+            "baseline": 0.7787061762425704,
+            "tuned": 0.7638039452149193,
+            "delta": -0.014902231027651092
+        },
+        "confusion_matrix": {
+            "baseline": {
+                "TP": 10,
+                "FN": 37,
+                "FP": 16,
+                "TN": 231
+            },
+            "tuned": {
+                "TP": 18,
+                "FN": 29,
+                "FP": 22,
+                "TN": 225
+            }
+        }
+    }
+}
