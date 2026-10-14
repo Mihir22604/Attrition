@@ -197,27 +197,67 @@ python src/build_notebook.py
 
 ---
 
-## 5. Launching the Interactive Streamlit Web Application (Task 9)
+## 5. Running the Application (FastAPI Backend + Streamlit Frontend)
 
-The Streamlit web application delivers an intuitive, interactive decision-support interface for HR business partners, talent acquisition leads, and people analytics teams.
+The system supports both dual-service operation (FastAPI backend + Streamlit frontend) and standalone local mode.
 
-### Step 5.1: Run the Streamlit Command
+### 5.1 Running the Services Locally
+
+#### Terminal 1 — Start the FastAPI Backend:
 ```powershell
+# Activate virtual environment
+.\venv\Scripts\Activate.ps1
+
+# Launch the FastAPI REST service on port 8000
+uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+- **Service Root:** `http://localhost:8000/`
+- **Health Check:** `http://localhost:8000/health`
+- **Interactive Swagger Documentation:** `http://localhost:8000/docs`
+
+#### Terminal 2 — Run the API Test Suite:
+```powershell
+python tests/test_api.py
+```
+*(Runs 6 automated tests validating endpoint connectivity, schema validation, and zero divergence with the production pipeline).*
+
+#### Terminal 3 — Start the Streamlit Frontend:
+```powershell
+# Optional: Set the API_URL environment variable to point to your FastAPI backend
+$env:API_URL = "http://localhost:8000"
+
+# Launch Streamlit
 streamlit run app.py
 ```
-
-### Step 5.2: Accessing the Application
-Once the server starts, Streamlit will display the local URL in your terminal:
-```
-  Local URL: http://localhost:8501
-  Network URL: http://192.168.x.x:8501
-```
-Open **`http://localhost:8501`** in your browser.
-
-*(To stop the Streamlit server at any time, press `Ctrl + C` in the terminal).*
+*(If `$env:API_URL` is omitted or the backend is offline, Streamlit automatically and gracefully falls back to local in-memory pipeline inference).*
 
 ---
 
+### 5.2 Cloud Deployment Instructions (Render + Streamlit Community Cloud)
+
+#### Step A: Deploy the Backend to Render
+1. Sign in to [Render](https://render.com/) and connect your GitHub repository `https://github.com/Mihir22604/Attrition`.
+2. Click **New +** $\to$ **Web Service**.
+3. Configure the service settings:
+   - **Name:** `attritioniq-backend` (or your preferred name)
+   - **Language / Environment:** `Python 3`
+   - **Branch:** `main`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn api.main:app --host 0.0.0.0 --port $PORT`
+   - **Instance Type:** `Free`
+   - **Health Check Path:** `/health`
+4. Click **Deploy Web Service**. Render will assign a public URL (e.g., `https://attritioniq-backend.onrender.com`).
+5. Verify health: visit `https://<your-render-app>.onrender.com/health` in your browser.
+
+#### Step B: Deploy the Frontend to Streamlit Community Cloud
+1. Sign in to [Streamlit Community Cloud](https://share.streamlit.io/) and click **Create app**.
+2. Select repository `Mihir22604/Attrition`, branch `main`, and main file path `app.py`.
+3. Open **Advanced Settings** $\to$ **Secrets** and paste:
+   ```toml
+   API_URL = "https://<your-render-app>.onrender.com"
+   ```
+4. Click **Deploy**. Streamlit will install dependencies, connect to your Render backend API, and display:
+   `⚡ Inferred via FastAPI Cloud Backend` on live predictions!
 ## 6. How to Use the Streamlit Application (Presentation-Optimized UI)
 
 The user interface is designed specifically for clean, focused presentations and intuitive employee risk evaluation:

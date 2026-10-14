@@ -202,3 +202,52 @@ streamlit run app.py
 ```
 
 The application initializes on `http://localhost:8501`, accepts raw inputs across all 30 features, executes inference in under $15\text{ ms}$, and delivers instantaneous decision-support feedback.
+
+---
+
+## 9. Cloud Architecture Extension: FastAPI Backend & Multi-Cloud Deployment
+
+In addition to standalone Streamlit execution, the system architecture was extended with an enterprise **FastAPI REST Service (`api/main.py`)** designed for decoupled, scalable cloud deployment across **Render (Backend)** and **Streamlit Community Cloud (Frontend)**.
+
+### 9.1 Multi-Cloud Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────────┐
+│              STREAMLIT COMMUNITY CLOUD (FRONTEND)        │
+│  File: app.py                                            │
+│  • Reads Secrets: API_URL = "https://...onrender.com"   │
+│  • Interactive single-employee risk form                 │
+│  • Visual risk cards, progress gauges & playbooks        │
+└──────────────────────────┬───────────────────────────────┘
+                           │ HTTP POST /predict?threshold=τ
+                           ▼
+┌──────────────────────────────────────────────────────────┐
+│              RENDER CLOUD WEB SERVICE (BACKEND)          │
+│  File: api/main.py | Server: Uvicorn ASGI                │
+│  • GET /health   - Container liveness & pipeline audit   │
+│  • POST /predict - Pydantic validation & model inference │
+│  • GET /docs     - Interactive Swagger UI documentation  │
+│  • Artifact: models/attrition_model_pipeline.joblib      │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 9.2 API Endpoints Specification
+
+1. **`GET /`**: Service identity, version, and routing index.
+2. **`GET /health`**: Health status check verifying that the Scikit-Learn `RandomForestClassifier` pipeline is loaded in memory.
+3. **`POST /predict?threshold=0.50`**: Ingests strict 30-feature JSON payload validated via Pydantic (`EmployeeProfile`), executes the pipeline, and returns `PredictionResponse` with `predicted_class`, `attrition_label`, `attrition_probability`, `risk_category`, `risk_factors`, and `recommended_action`.
+4. **`GET /docs`**: Interactive OpenAPI / Swagger UI test suite.
+
+### 9.3 Resilience and Fallback Guarantees
+- If the Render backend is temporarily sleeping or unreachable, `app.py` catches the network exception, alerts the user with an informative warning, and immediately falls back to in-memory local model inference without crashing.
+- Both endpoints and local execution execute the exact same serialized pipeline (`models/attrition_model_pipeline.joblib`), ensuring mathematical consistency ($0.0605 \equiv 0.0605$).
+
+### 9.4 Verification Suite
+Automated integration tests in [`tests/test_api.py`](file:///c:/Users/mihir/Desktop/AttritionIQ%20%E2%80%94%20Intelligent%20Employee%20Attrition%20Prediction%20System/tests/test_api.py) verified:
+- `test_root_endpoint`: Passed (HTTP 200)
+- `test_health_endpoint`: Passed (HTTP 200, model loaded)
+- `test_predict_endpoint_valid_at_risk`: Passed (HTTP 200, Elevated Risk, P = 61.2%)
+- `test_predict_endpoint_valid_retained`: Passed (HTTP 200, Low Risk, P = 6.9%)
+- `test_predict_endpoint_invalid_category`: Passed (HTTP 422 validation error)
+- `test_predict_endpoint_invalid_numerical_bounds`: Passed (HTTP 422 validation error)
+- `test_api_vs_direct_pipeline_consistency`: Passed (Zero divergence)

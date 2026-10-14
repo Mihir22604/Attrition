@@ -1,10 +1,11 @@
 """
 AttritionIQ — Intelligent Employee Attrition Prediction System
 Streamlit Production Decision-Support Web Application
-Clean Presentation-Optimized Interface
+Connected with FastAPI Backend + Local Fallback Architecture
 """
 
 import os
+import requests
 import joblib
 import pandas as pd
 import numpy as np
@@ -21,7 +22,17 @@ st.set_page_config(
 )
 
 # ------------------------------------------------------------------------------
-# Modern Presentation Styling (Clean, Professional, Focused)
+# API Configuration (Streamlit Secrets / Environment Variable)
+# ------------------------------------------------------------------------------
+API_URL = os.getenv("API_URL", "").strip().rstrip("/")
+if not API_URL:
+    try:
+        API_URL = st.secrets.get("API_URL", "").strip().rstrip("/")
+    except Exception:
+        API_URL = ""
+
+# ------------------------------------------------------------------------------
+# Modern Presentation Styling
 # ------------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -66,6 +77,30 @@ st.markdown("""
         background: #3B82F6;
         color: white;
         margin-bottom: 8px;
+    }
+    
+    .service-badge-api {
+        display: inline-block;
+        background: #EFF6FF;
+        color: #1D4ED8;
+        border: 1px solid #BFDBFE;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+    
+    .service-badge-local {
+        display: inline-block;
+        background: #F1F5F9;
+        color: #475569;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 12px;
     }
     
     .result-card-low {
@@ -119,22 +154,25 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# Load Final Production Model Pipeline
+# Load Local Production Model Pipeline (Used for Local Mode & Fallback)
 # ------------------------------------------------------------------------------
 PRODUCTION_PIPELINE_PATH = "models/attrition_model_pipeline.joblib"
 
 @st.cache_resource
 def load_champion_pipeline():
-    """Load the final champion Random Forest pipeline."""
+    """Load the final champion Random Forest pipeline for local inference/fallback."""
     if not os.path.exists(PRODUCTION_PIPELINE_PATH):
-        st.error(f"Production model pipeline not found at `{PRODUCTION_PIPELINE_PATH}`.")
         return None
-    return joblib.load(PRODUCTION_PIPELINE_PATH)
+    try:
+        return joblib.load(PRODUCTION_PIPELINE_PATH)
+    except Exception as e:
+        st.warning(f"Note: Local pipeline could not be loaded ({e}).")
+        return None
 
-pipeline = load_champion_pipeline()
+local_pipeline = load_champion_pipeline()
 
 # ------------------------------------------------------------------------------
-# Sidebar: System Status & Sensitivity Control (No Model Switching)
+# Sidebar: System Status & Sensitivity Control
 # ------------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("### 💼 AttritionIQ System")
@@ -145,10 +183,17 @@ with st.sidebar:
     **Validated Performance:**
     - Test Accuracy: **82.65%**
     - ROC-AUC Score: **0.7638**
-    - Low False Alarm Rate
+    - Lowest False Alarm Rate
     """)
     st.markdown("---")
     
+    st.markdown("### 🌐 Backend Integration")
+    if API_URL:
+        st.success(f"🔗 **FastAPI URL Configured:**\n`{API_URL}`")
+    else:
+        st.info("💻 **Running in Local Mode**\n*(Set `API_URL` environment variable or Streamlit Secret to connect to Render backend)*")
+        
+    st.markdown("---")
     st.markdown("### 🎯 Decision Sensitivity")
     threshold = st.slider(
         "Risk Cutoff (τ)",
@@ -164,7 +209,7 @@ with st.sidebar:
         st.caption("🔵 **Balanced Mode:** Standard operational threshold.")
 
     st.markdown("---")
-    st.caption("AttritionIQ v2.0 • Final Production Deployment")
+    st.caption("AttritionIQ v2.0 • Full-Stack Cloud Architecture")
 
 # ------------------------------------------------------------------------------
 # Main Hero Section
@@ -229,7 +274,7 @@ with col_right:
     marital_status = st.selectbox("Marital Status", marital_options, index=1)
 
 # ------------------------------------------------------------------------------
-# Collapsible Optional Secondary Parameters (Keeps Main View Clean & Simple)
+# Collapsible Optional Secondary Parameters
 # ------------------------------------------------------------------------------
 with st.expander("⚙️ Additional Parameters (Optional / Advanced)", expanded=False):
     col_adv1, col_adv2 = st.columns(2)
@@ -250,51 +295,130 @@ if years_at_company > total_working_years:
     total_working_years = years_at_company
 
 # ------------------------------------------------------------------------------
-# Assemble Complete 30-Attribute Feature Vector for Production Pipeline
+# Assemble Complete 30-Attribute Payload / DataFrame
 # ------------------------------------------------------------------------------
-input_df = pd.DataFrame({
-    'Age': [age],
-    'BusinessTravel': [business_travel],
-    'DailyRate': [daily_rate],
-    'Department': [department],
-    'DistanceFromHome': [distance_home],
-    'Education': [3],
-    'EducationField': ['Life Sciences'],
-    'EnvironmentSatisfaction': [env_satisfaction],
-    'Gender': ['Male'],
-    'HourlyRate': [hourly_rate],
-    'JobInvolvement': [job_involvement],
-    'JobLevel': [1 if monthly_income < 3500 else (2 if monthly_income < 6000 else (3 if monthly_income < 10000 else 4))],
-    'JobRole': [job_role],
-    'JobSatisfaction': [job_satisfaction],
-    'MaritalStatus': [marital_status],
-    'MonthlyIncome': [monthly_income],
-    'MonthlyRate': [14000],
-    'NumCompaniesWorked': [num_companies],
-    'OverTime': [overtime],
-    'PercentSalaryHike': [salary_hike],
-    'PerformanceRating': [3],
-    'RelationshipSatisfaction': [3],
-    'StockOptionLevel': [stock_options],
-    'TotalWorkingYears': [total_working_years],
-    'TrainingTimesLastYear': [3],
-    'WorkLifeBalance': [work_life_balance],
-    'YearsAtCompany': [years_at_company],
-    'YearsInCurrentRole': [min(2, years_at_company)],
-    'YearsSinceLastPromotion': [min(1, years_at_company)],
-    'YearsWithCurrManager': [years_with_manager]
-})
+employee_payload = {
+    'Age': age,
+    'BusinessTravel': business_travel,
+    'DailyRate': float(daily_rate),
+    'Department': department,
+    'DistanceFromHome': float(distance_home),
+    'Education': 3,
+    'EducationField': 'Life Sciences',
+    'EnvironmentSatisfaction': env_satisfaction,
+    'Gender': 'Male',
+    'HourlyRate': float(hourly_rate),
+    'JobInvolvement': job_involvement,
+    'JobLevel': 1 if monthly_income < 3500 else (2 if monthly_income < 6000 else (3 if monthly_income < 10000 else 4)),
+    'JobRole': job_role,
+    'JobSatisfaction': job_satisfaction,
+    'MaritalStatus': marital_status,
+    'MonthlyIncome': float(monthly_income),
+    'MonthlyRate': 14000.0,
+    'NumCompaniesWorked': num_companies,
+    'OverTime': overtime,
+    'PercentSalaryHike': float(salary_hike),
+    'PerformanceRating': 3,
+    'RelationshipSatisfaction': 3,
+    'StockOptionLevel': stock_options,
+    'TotalWorkingYears': total_working_years,
+    'TrainingTimesLastYear': 3,
+    'WorkLifeBalance': work_life_balance,
+    'YearsAtCompany': years_at_company,
+    'YearsInCurrentRole': min(2, years_at_company),
+    'YearsSinceLastPromotion': min(1, years_at_company),
+    'YearsWithCurrManager': years_with_manager
+}
 
 # ------------------------------------------------------------------------------
-# Real-Time Risk Inference & Presentation Results Card
+# Execute Prediction (FastAPI Backend with Graceful Local Fallback)
 # ------------------------------------------------------------------------------
 st.markdown("---")
 st.markdown("### 📊 Prediction Result")
 
-if pipeline is not None:
-    # Obtain prediction probability from the final champion pipeline
-    prob_depart = pipeline.predict_proba(input_df)[0][1]
-    is_at_risk = prob_depart >= threshold
+result_data = None
+prediction_source = "local"
+api_warning = None
+
+# Attempt API Prediction if API_URL is configured
+if API_URL:
+    try:
+        api_endpoint = f"{API_URL}/predict"
+        res = requests.post(
+            api_endpoint,
+            json=employee_payload,
+            params={"threshold": threshold},
+            timeout=8
+        )
+        if res.status_code == 200:
+            result_data = res.json()
+            prediction_source = "api"
+        else:
+            api_warning = f"Backend returned HTTP {res.status_code}: {res.text}"
+    except Exception as e:
+        api_warning = f"Unable to reach FastAPI backend at `{API_URL}`: {str(e)}"
+
+# Fallback to local Scikit-Learn pipeline if API prediction was not achieved
+if result_data is None:
+    if local_pipeline is not None:
+        try:
+            input_df = pd.DataFrame([employee_payload])
+            prob_val = float(local_pipeline.predict_proba(input_df)[0][1])
+            is_at_risk_local = prob_val >= threshold
+            
+            # Risk factor signals
+            signals = []
+            if overtime == "Yes":
+                signals.append("Compulsory Overtime Active (Primary Turnover Risk)")
+            if stock_options == 0:
+                signals.append("Zero Stock Options / Equity (Lack of Retention Anchor)")
+            if monthly_income < 3500:
+                signals.append(f"Low Monthly Income (${monthly_income:,} - Below Peer Median)")
+            if job_satisfaction <= 2:
+                signals.append(f"Depressed Job Satisfaction Rating ({job_satisfaction}/4)")
+            if work_life_balance <= 2:
+                signals.append(f"Low Work-Life Balance Rating ({work_life_balance}/4)")
+            if distance_home > 15:
+                signals.append(f"Long Commute Distance ({distance_home} miles)")
+            if marital_status == "Single":
+                signals.append("Single Demographic Cohort (Elevated Baseline Mobility)")
+
+            result_data = {
+                "predicted_class": 1 if is_at_risk_local else 0,
+                "attrition_label": "Yes" if is_at_risk_local else "No",
+                "attrition_probability": round(prob_val, 4),
+                "risk_category": "Low" if prob_val < 0.30 else ("Moderate" if prob_val < 0.60 else "Elevated"),
+                "decision_threshold": threshold,
+                "risk_factors": signals,
+                "recommended_action": (
+                    "Initiate proactive retention playbook: schedule confidential stay interview, "
+                    "review compensation competitiveness against external benchmarks, and explore "
+                    "workload / overtime rebalancing."
+                ) if is_at_risk_local else (
+                    "Maintain standard talent stewardship: continue regular quarterly check-ins "
+                    "and ongoing professional development opportunities."
+                )
+            }
+            prediction_source = "local"
+        except Exception as e:
+            st.error(f"Local inference failed: {str(e)}")
+    else:
+        st.error("No inference engine available. Both the backend API and local pipeline failed.")
+
+# ------------------------------------------------------------------------------
+# Render Prediction Cards & Insights
+# ------------------------------------------------------------------------------
+if result_data is not None:
+    # Display backend source status indicator
+    if prediction_source == "api":
+        st.markdown(f'<div class="service-badge-api">⚡ Inferred via FastAPI Cloud Backend ({API_URL})</div>', unsafe_allow_html=True)
+    else:
+        if api_warning:
+            st.warning(f"⚠️ **FastAPI Backend Notice:** {api_warning}\n\n*Gracefully fell back to in-memory local model pipeline.*")
+        st.markdown('<div class="service-badge-local">💻 Inferred via Local Model Pipeline</div>', unsafe_allow_html=True)
+
+    prob_depart = result_data["attrition_probability"]
+    is_at_risk = result_data["predicted_class"] == 1
 
     # Result Card
     card_class = "result-card-high" if is_at_risk else "result-card-low"
@@ -309,7 +433,7 @@ if pipeline is not None:
         </div>
         <p style="margin: 0; color: #475569; font-size: 14px;">
             Predicted Status: <strong>{'Likely to Leave' if is_at_risk else 'Likely to Stay'}</strong> 
-            (Decision Threshold: τ = {threshold:.2f})
+            (Decision Threshold: τ = {threshold:.2f} | Risk Tier: {result_data['risk_category']})
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -322,44 +446,19 @@ if pipeline is not None:
 
     with col_out1:
         st.markdown("##### 🔍 Key Risk Drivers Detected")
-        signals = []
-        if overtime == "Yes":
-            signals.append("⚠️ **Compulsory Overtime Active** (Major Turnover Factor)")
-        if stock_options == 0:
-            signals.append("⚠️ **Zero Equity / Stock Options** (Low Retention Anchor)")
-        if monthly_income < 3500:
-            signals.append(f"⚠️ **Low Monthly Income ($ {monthly_income:,})** (Below Peer Median)")
-        if job_satisfaction <= 2:
-            signals.append(f"⚠️ **Low Job Satisfaction Rating ({job_satisfaction}/4)**")
-        if work_life_balance <= 2:
-            signals.append(f"⚠️ **Poor Work-Life Balance Rating ({work_life_balance}/4)**")
-        if distance_home > 15:
-            signals.append(f"⚠️ **Long Commuting Distance ({distance_home} miles)**")
-        if marital_status == "Single":
-            signals.append("⚠️ **Single Demographic Cohort** (Higher Mobility Profile)")
-
+        signals = result_data.get("risk_factors", [])
         if signals:
             for s in signals:
-                st.write(s)
+                st.write(f"⚠️ **{s}**")
         else:
             st.success("✅ No primary risk triggers detected. Profile demonstrates healthy retention signals.")
 
     with col_out2:
         st.markdown("##### 💡 Recommended Retention Action")
         if is_at_risk:
-            st.warning("""
-            **Priority HR Retention Playbook:**
-            1. **Workload Relief:** Review overtime schedule and rebalance project commitments.
-            2. **Compensation Review:** Benchmark salary against external market percentiles.
-            3. **Retention Grant:** Explore Tier 1/2 stock option grant to build long-term alignment.
-            4. **Stay Interview:** Conduct a 1-on-1 career development and satisfaction dialogue.
-            """)
+            st.warning(result_data["recommended_action"])
         else:
-            st.info("""
-            **Standard Talent Stewardship:**
-            1. Maintain quarterly career milestone check-ins.
-            2. Continue standard performance recognition and leadership development pathways.
-            """)
+            st.info(result_data["recommended_action"])
 
 # ------------------------------------------------------------------------------
 # Persistent Ethical & Governance Disclaimer

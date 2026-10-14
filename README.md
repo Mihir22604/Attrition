@@ -2,14 +2,16 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.4%2B-orange.svg)](https://scikit-learn.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.30%2B-red.svg)](https://streamlit.io/)
+[![Render](https://img.shields.io/badge/Deploy%20to-Render-46E3B7.svg)](https://render.com/)
 [![Status](https://img.shields.io/badge/Project%20Status-Completed%20%26%20Verified-brightgreen.svg)](#)
 
 An enterprise-grade, end-to-end Machine Learning system and interactive web application designed to proactively predict voluntary employee attrition, uncover organizational turnover drivers, and recommend high-impact talent retention interventions.
 
 ---
 
-## 🚀 Quick Start (Run the Web Application)
+## 🚀 Quick Start (Local Services)
 
 1. **Activate your Python environment:**
    ```powershell
@@ -17,18 +19,29 @@ An enterprise-grade, end-to-end Machine Learning system and interactive web appl
    # or source venv/bin/activate  # macOS / Linux
    ```
 
-2. **Install requirements:**
+2. **Install all dependencies:**
    ```powershell
    pip install -r requirements.txt
    ```
 
-3. **Launch the interactive Streamlit decision-support application:**
+3. **Start the FastAPI Cloud Backend (Terminal 1):**
    ```powershell
+   uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+   - Swagger Documentation: `http://localhost:8000/docs`
+   - Health Check: `http://localhost:8000/health`
+
+4. **Start the Streamlit Frontend (Terminal 2):**
+   ```powershell
+   $env:API_URL = "http://localhost:8000"
    streamlit run app.py
    ```
    Open **`http://localhost:8501`** in your browser.
 
-> 📖 **For complete step-by-step setup, pipeline execution commands, and troubleshooting, read [INSTRUCTIONS_TO_RUN.md](INSTRUCTIONS_TO_RUN.md).**
+> ☁️ **Cloud Deployment (Render + Streamlit Cloud):**  
+> - **Backend on Render:** Deploy using `render.yaml` or Web Service with start command: `uvicorn api.main:app --host 0.0.0.0 --port $PORT`.  
+> - **Frontend on Streamlit Community Cloud:** Configure `API_URL = "https://your-backend.onrender.com"` in Streamlit Secrets.  
+> 📖 For full setup and testing details, read [INSTRUCTIONS_TO_RUN.md](INSTRUCTIONS_TO_RUN.md).
 
 ---
 
@@ -56,6 +69,9 @@ An enterprise-grade, end-to-end Machine Learning system and interactive web appl
 ## 📁 Repository Directory Structure
 
 - **`app.py`**: Production interactive Streamlit application with custom styling, preset archetypes, dynamic threshold slider, risk factor attribution, and retention playbooks.
+- **`api/main.py`**: FastAPI cloud REST API service with `/health`, `/predict`, and `/docs` interactive Swagger endpoints.
+- **`render.yaml`**: Infrastructure-as-code deployment blueprint for automated Render Web Service provisioning.
+- **`tests/test_api.py`**: Automated unit and consistency test suite validating API endpoints and pipeline output alignment.
 - **`src/`**: Modular, reproducible Python source scripts:
   - `data_loader.py` — Task 1: Tab-separated ingestion and schema audit.
   - `data_cleaner.py` — Task 2: Null/duplicate verification and constant pruning.
