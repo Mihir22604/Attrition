@@ -1,5 +1,11 @@
+
 """
-AttritionIQ - Task 7 (Feature Importance & Interpretability) & Task 8 (Model Optimization) Runner
+AttritionIQ — Consolidated Task 7 & Task 8 Execution Runner
+Refactored & Consolidated Architecture:
+- Task 7: Feature Importance & Interpretability Analysis (Preserved)
+- Task 8: Systematic Hyperparameter Optimization & Evaluation (RF & LR Only)
+- Production Model Deployment: Logistic Regression Pipeline Serialization
+
 Author: Senior Machine Learning Project Analyst & Technical Documentation Specialist
 """
 
@@ -13,15 +19,18 @@ import seaborn as sns
 from typing import Dict, Any, List, Tuple
 
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
 from sklearn.inspection import permutation_importance
-from sklearn.model_selection import StratifiedKFold, GridSearchCV
+from sklearn.model_selection import StratifiedKFold, GridSearchCV, cross_val_predict
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
-    roc_auc_score, roc_curve, confusion_matrix, classification_report,
-    precision_recall_curve
+    roc_auc_score, roc_curve, confusion_matrix, classification_report
 )
 
+# ------------------------------------------------------------------------------
 # Directory Configuration
+# ------------------------------------------------------------------------------
 DATA_DIR = "data/processed"
 MODELS_DIR = "models"
 REPORTS_DIR = "reports"
@@ -32,17 +41,20 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(FIGURES_DIR, exist_ok=True)
 os.makedirs(JSON_REPORTS_DIR, exist_ok=True)
 
-# Styling configuration
+# Publication-grade styling configuration
 plt.rcParams['font.sans-serif'] = 'DejaVu Sans'
 plt.rcParams['axes.edgecolor'] = '#CBD5E1'
 plt.rcParams['axes.linewidth'] = 0.8
 
 
-def load_data():
+def load_data() -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series, List[str]]:
     """Load stratified train and test data."""
     train_path = os.path.join(DATA_DIR, "train_features_preprocessed.csv")
     test_path = os.path.join(DATA_DIR, "test_features_preprocessed.csv")
     
+    if not os.path.exists(train_path) or not os.path.exists(test_path):
+        raise FileNotFoundError(f"Preprocessed data not found in {DATA_DIR}. Ensure Task 4 preprocessing has run.")
+        
     train_df = pd.read_csv(train_path)
     test_df = pd.read_csv(test_path)
     
@@ -78,7 +90,7 @@ def map_parent_features(feature_names: List[str]) -> Dict[str, str]:
 
 
 # ==============================================================================
-# TASK 7: FEATURE IMPORTANCE & INTERPRETABILITY
+# TASK 7: FEATURE IMPORTANCE & INTERPRETABILITY ANALYSIS
 # ==============================================================================
 
 def run_task_7(rf_model: RandomForestClassifier, X_train: pd.DataFrame, y_train: pd.Series,
@@ -90,7 +102,7 @@ def run_task_7(rf_model: RandomForestClassifier, X_train: pd.DataFrame, y_train:
     3. Calculate Permutation Importance on held-out test data.
     4. Generate publication-quality visualizations and JSON/CSV artifacts.
     """
-    print(f"\n{'='*75}\nEXECUTING TASK 7: FEATURE IMPORTANCE & INTERPRETABILITY ANALYSIS\n{'='*75}")
+    print(f"\n{'='*80}\nEXECUTING TASK 7: FEATURE IMPORTANCE & INTERPRETABILITY ANALYSIS\n{'='*80}")
     
     # 1. MDI (Mean Decrease in Impurity)
     mdi_importances = rf_model.feature_importances_
@@ -243,10 +255,9 @@ def run_task_7(rf_model: RandomForestClassifier, X_train: pd.DataFrame, y_train:
     plt.close()
     print(f"Saved Figure 7.3 to: {fig3_path}")
 
-    # Plot 4: Side-by-Side Comparison of MDI vs Permutation Importance (The Cardinality Bias Insight)
+    # Plot 4: Side-by-Side Comparison of MDI vs Permutation Importance
     fig, axes = plt.subplots(1, 2, figsize=(14, 6.5), dpi=300, sharey=False)
     
-    # Left: Top 10 MDI
     top10_mdi = mdi_df.head(10).iloc[::-1]
     axes[0].barh(np.arange(10), top10_mdi['mdi_importance'], color='#2563EB', edgecolor='#1E3A8A', alpha=0.85)
     axes[0].set_yticks(np.arange(10))
@@ -257,7 +268,6 @@ def run_task_7(rf_model: RandomForestClassifier, X_train: pd.DataFrame, y_train:
     for idx, row in top10_mdi.reset_index().iterrows():
         axes[0].text(row['mdi_importance'] + 0.001, idx, f"{row['mdi_importance']:.4f}", va='center', fontsize=8)
         
-    # Right: Top 10 Permutation Importance
     top10_p = combined_importance.head(10).iloc[::-1]
     axes[1].barh(np.arange(10), top10_p['perm_auc_mean'], color='#7C3AED', edgecolor='#4C1D95', alpha=0.85)
     axes[1].set_yticks(np.arange(10))
@@ -308,393 +318,136 @@ def run_task_7(rf_model: RandomForestClassifier, X_train: pd.DataFrame, y_train:
 
 
 # ==============================================================================
-# TASK 8: MODEL OPTIMIZATION (HYPERPARAMETER TUNING)
+# HELPER FUNCTIONS: VISUALIZATIONS & METRICS
 # ==============================================================================
 
-def run_task_8(X_train: pd.DataFrame, y_train: pd.Series,
-               X_test: pd.DataFrame, y_test: pd.Series,
-               baseline_rf_path: str = "models/random_forest.joblib"):
-    """
-    Execute Task 8:
-    1. Load baseline Random Forest model from Task 5/6.
-    2. Configure Stratified 5-Fold Cross Validation.
-    3. Define structured hyperparameter search grid targeting recall/F1 and generalization.
-    4. Execute optimization targeting F1-score on Attrition = Yes (REQ-32).
-    5. Refit best estimator on full training set and serialize to models/random_forest_tuned.joblib.
-    6. Evaluate on held-out test split (N=294) strictly after tuning.
-    7. Generate Before vs After performance comparison table and visualizations.
-    """
-    print(f"\n{'='*75}\nEXECUTING TASK 8: MODEL OPTIMIZATION & HYPERPARAMETER TUNING\n{'='*75}")
-    
-    # Load baseline model
-    base_rf = joblib.load(baseline_rf_path)
-    
-    # Baseline test predictions
-    y_test_pred_base = base_rf.predict(X_test)
-    y_test_proba_base = base_rf.predict_proba(X_test)[:, 1]
-    y_train_pred_base = base_rf.predict(X_train)
-    
-    base_metrics = {
-        'train_accuracy': float(accuracy_score(y_train, y_train_pred_base)),
-        'test_accuracy': float(accuracy_score(y_test, y_test_pred_base)),
-        'test_precision_class1': float(precision_score(y_test, y_test_pred_base, pos_label=1, zero_division=0)),
-        'test_recall_class1': float(recall_score(y_test, y_test_pred_base, pos_label=1, zero_division=0)),
-        'test_f1_class1': float(f1_score(y_test, y_test_pred_base, pos_label=1, zero_division=0)),
-        'test_roc_auc': float(roc_auc_score(y_test, y_test_proba_base)),
-        'cm_test': confusion_matrix(y_test, y_test_pred_base).tolist()
-    }
-    base_metrics['gap_accuracy'] = (base_metrics['train_accuracy'] - base_metrics['test_accuracy']) * 100
-    
-    print("\n--- BASELINE RANDOM FOREST TEST PERFORMANCE ---")
-    print(f"Test Accuracy: {base_metrics['test_accuracy']*100:.2f}% | Train Accuracy: {base_metrics['train_accuracy']*100:.2f}% (Gap: {base_metrics['gap_accuracy']:.2f}%)")
-    print(f"Test Recall (Yes): {base_metrics['test_recall_class1']*100:.2f}% ({base_metrics['cm_test'][1][1]} / 47 captured; {base_metrics['cm_test'][1][0]} missed)")
-    print(f"Test Precision: {base_metrics['test_precision_class1']*100:.2f}% | Test F1: {base_metrics['test_f1_class1']:.4f} | ROC-AUC: {base_metrics['test_roc_auc']:.4f}")
-    
-    # 2. Stratified 5-Fold Cross Validation Setup
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    
-    # 3. Systematic Hyperparameter Search Grid
-    # In strict accordance with REQ-32, search optimizes for minority class detection (F1 on Attrition = Yes)
-    param_grid = {
-        'n_estimators': [100, 150, 200],
-        'max_depth': [4, 6, 8, 10],
-        'min_samples_split': [4, 8, 12],
-        'min_samples_leaf': [2, 4, 6],
-        'class_weight': ['balanced', 'balanced_subsample', {0: 1, 1: 3.5}, {0: 1, 1: 4.5}]
-    }
-    
-    print("\nConfiguring systematic hyperparameter optimization...")
-    print(f"Cross-Validation strategy: Stratified 5-Fold (shuffle=True, random_state=42)")
-    print(f"Target scoring function: 'f1' (minority class positive detection priority)")
-    
-    grid_search = GridSearchCV(
-        estimator=RandomForestClassifier(random_state=42, n_jobs=-1),
-        param_grid=param_grid,
-        scoring='f1',
-        cv=cv,
-        n_jobs=-1,
-        verbose=1
-    )
-    
-    print("Executing GridSearchCV on training partition (X_train, y_train)...")
-    grid_search.fit(X_train, y_train)
-    
-    best_rf = grid_search.best_estimator_
-    best_params = grid_search.best_params_
-    best_cv_score = grid_search.best_score_
-    
-    print(f"\nBest Cross-Validation F1-Score: {best_cv_score:.4f}")
-    print("Optimal Hyperparameter Configuration:")
-    for k, v in best_params.items():
-        print(f"  - {k}: {v}")
-        
-    # Serialize optimized model artifact
-    tuned_model_path = os.path.join(MODELS_DIR, "random_forest_tuned.joblib")
-    joblib.dump(best_rf, tuned_model_path)
-    print(f"\nSerialized tuned model artifact to: {tuned_model_path}")
-    
-    # 4. Final Evaluation on Held-Out Test Set (strictly untouched during tuning)
-    y_test_pred_tuned = best_rf.predict(X_test)
-    y_test_proba_tuned = best_rf.predict_proba(X_test)[:, 1]
-    y_train_pred_tuned = best_rf.predict(X_train)
-    
-    cm_tuned = confusion_matrix(y_test, y_test_pred_tuned)
-    
-    tuned_metrics = {
-        'train_accuracy': float(accuracy_score(y_train, y_train_pred_tuned)),
-        'test_accuracy': float(accuracy_score(y_test, y_test_pred_tuned)),
-        'test_precision_class1': float(precision_score(y_test, y_test_pred_tuned, pos_label=1, zero_division=0)),
-        'test_recall_class1': float(recall_score(y_test, y_test_pred_tuned, pos_label=1, zero_division=0)),
-        'test_f1_class1': float(f1_score(y_test, y_test_pred_tuned, pos_label=1, zero_division=0)),
-        'test_roc_auc': float(roc_auc_score(y_test, y_test_proba_tuned)),
-        'cm_test': cm_tuned.tolist()
-    }
-    tuned_metrics['gap_accuracy'] = (tuned_metrics['train_accuracy'] - tuned_metrics['test_accuracy']) * 100
-    
-    # Generate Standard Classification Report for Tuned Model
-    clf_rep_tuned_str = classification_report(
-        y_test, y_test_pred_tuned,
-        target_names=['Retained (0)', 'Departed (1)'],
-        digits=4
-    )
-    clf_rep_tuned_dict = classification_report(
-        y_test, y_test_pred_tuned,
-        target_names=['Retained (0)', 'Departed (1)'],
-        digits=4,
-        output_dict=True
-    )
-    
-    print("\n--- TUNED RANDOM FOREST TEST CLASSIFICATION REPORT (STANDARD FORMAT) ---")
-    print(clf_rep_tuned_str)
-    print(f"Test ROC-AUC: {tuned_metrics['test_roc_auc']:.4f} | Accuracy: {tuned_metrics['test_accuracy']*100:.2f}% | Train vs Test Gap: {tuned_metrics['gap_accuracy']:+.2f}%")
-    print(f"Minority Recall: {tuned_metrics['test_recall_class1']*100:.2f}% ({cm_tuned[1][1]}/47 captured, missed {cm_tuned[1][0]})")
-    print(f"Minority Precision: {tuned_metrics['test_precision_class1']*100:.2f}% | Minority F1: {tuned_metrics['test_f1_class1']:.4f}")
-    
-    # Render Standard Classification Report Image
-    render_standard_classification_report_image(
-        model_name="Random Forest (Tuned & Optimized)",
-        rep_dict=clf_rep_tuned_dict,
-        roc_auc=tuned_metrics['test_roc_auc'],
-        output_path=os.path.join(FIGURES_DIR, "classification_report_random_forest_tuned.png")
-    )
-    
-    # Threshold Trade-off Exploration (Operational Decision Support)
-    threshold_results = []
-    for tau in np.arange(0.20, 0.81, 0.02):
-        t_pred = (y_test_proba_tuned >= tau).astype(int)
-        t_cm = confusion_matrix(y_test, t_pred)
-        threshold_results.append({
-            'threshold': float(round(tau, 2)),
-            'recall': float(recall_score(y_test, t_pred, zero_division=0)),
-            'precision': float(precision_score(y_test, t_pred, zero_division=0)),
-            'f1': float(f1_score(y_test, t_pred, zero_division=0)),
-            'accuracy': float(accuracy_score(y_test, t_pred)),
-            'TP': int(t_cm[1, 1]),
-            'FP': int(t_cm[0, 1]),
-            'FN': int(t_cm[1, 0]),
-            'TN': int(t_cm[0, 0])
-        })
-    thresh_df = pd.DataFrame(threshold_results)
-    
-    # Save Classification Report JSON
-    tuned_json_path = os.path.join(JSON_REPORTS_DIR, "classification_report_random_forest_tuned.json")
-    with open(tuned_json_path, 'w', encoding='utf-8') as f:
-        json.dump({
-            'model_name': 'Random Forest (Tuned & Optimized)',
-            'short_name': 'random_forest_tuned',
-            'test_sample_size': len(y_test),
-            'best_hyperparameters': best_params,
-            'best_cv_f1': float(best_cv_score),
-            'metrics_summary': {
-                'train_accuracy': tuned_metrics['train_accuracy'],
-                'test_accuracy': tuned_metrics['test_accuracy'],
-                'accuracy_gap_percent': tuned_metrics['gap_accuracy'],
-                'test_roc_auc': tuned_metrics['test_roc_auc'],
-                'precision_attrition_yes': tuned_metrics['test_precision_class1'],
-                'recall_attrition_yes': tuned_metrics['test_recall_class1'],
-                'f1_attrition_yes': tuned_metrics['test_f1_class1']
-            },
-            'confusion_matrix': {
-                'true_negatives': int(cm_tuned[0, 0]),
-                'false_positives': int(cm_tuned[0, 1]),
-                'false_negatives': int(cm_tuned[1, 0]),
-                'true_positives': int(cm_tuned[1, 1])
-            },
-            'classification_report_standard': clf_rep_tuned_dict,
-            'raw_text_report': clf_rep_tuned_str,
-            'threshold_tradeoff_sample': thresh_df[thresh_df['threshold'].isin([0.35, 0.40, 0.42, 0.45, 0.50, 0.55])].to_dict(orient='records')
-        }, f, indent=4)
-    print(f"Saved tuned classification report JSON to: {tuned_json_path}")
-
-    # 5. Visualizations for Task 8
-    
-    # Plot 1: Confusion Matrix Comparison (Baseline vs Tuned)
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5.5), dpi=300)
-    
-    cm_base_arr = np.array(base_metrics['cm_test'])
-    tot_base = cm_base_arr.sum()
-    labels_base = np.array([
-        [f"TN: {cm_base_arr[0,0]}\n({cm_base_arr[0,0]/tot_base*100:.1f}%)", f"FP: {cm_base_arr[0,1]}\n({cm_base_arr[0,1]/tot_base*100:.1f}%)"],
-        [f"FN: {cm_base_arr[1,0]}\n({cm_base_arr[1,0]/tot_base*100:.1f}%)", f"TP: {cm_base_arr[1,1]}\n({cm_base_arr[1,1]/tot_base*100:.1f}%)"]
+def render_confusion_matrix_image(cm: np.ndarray, model_name: str, tuning_status: str,
+                                  rec: float, prec: float, f1: float, cmap: str, output_path: str):
+    """Render an individual publication-grade confusion matrix image."""
+    plt.figure(figsize=(6.5, 5.2), dpi=300)
+    tot = cm.sum()
+    labels = np.array([
+        [f"TN: {cm[0, 0]}\n({cm[0, 0]/tot*100:.1f}%)", f"FP: {cm[0, 1]}\n({cm[0, 1]/tot*100:.1f}%)"],
+        [f"FN: {cm[1, 0]}\n({cm[1, 0]/tot*100:.1f}%)", f"TP: {cm[1, 1]}\n({cm[1, 1]/tot*100:.1f}%)"]
     ])
-    sns.heatmap(cm_base_arr, annot=labels_base, fmt='', cmap='Blues', cbar=False, ax=axes[0],
-                annot_kws={'fontsize': 11, 'fontweight': 'bold'}, linewidths=1.5, linecolor='#CBD5E1')
-    axes[0].set_title(f"Baseline Random Forest (Default)\nRecall: {base_metrics['test_recall_class1']*100:.1f}% | Prec: {base_metrics['test_precision_class1']*100:.1f}% | F1: {base_metrics['test_f1_class1']:.4f}",
-                      fontsize=11.5, fontweight='bold', pad=8)
-    axes[0].set_xlabel('Predicted Label', fontsize=10, fontweight='bold')
-    axes[0].set_ylabel('True Label', fontsize=10, fontweight='bold')
-    axes[0].set_xticklabels(['Retained (0)', 'Departed (1)'])
-    axes[0].set_yticklabels(['Retained (0)', 'Departed (1)'])
     
-    tot_tuned = cm_tuned.sum()
-    labels_tuned = np.array([
-        [f"TN: {cm_tuned[0,0]}\n({cm_tuned[0,0]/tot_tuned*100:.1f}%)", f"FP: {cm_tuned[0,1]}\n({cm_tuned[0,1]/tot_tuned*100:.1f}%)"],
-        [f"FN: {cm_tuned[1,0]}\n({cm_tuned[1,0]/tot_tuned*100:.1f}%)", f"TP: {cm_tuned[1,1]}\n({cm_tuned[1,1]/tot_tuned*100:.1f}%)"]
-    ])
-    sns.heatmap(cm_tuned, annot=labels_tuned, fmt='', cmap='Purples', cbar=False, ax=axes[1],
-                annot_kws={'fontsize': 11, 'fontweight': 'bold'}, linewidths=1.5, linecolor='#CBD5E1')
-    axes[1].set_title(f"Tuned Random Forest (F1-Optimized)\nRecall: {tuned_metrics['test_recall_class1']*100:.1f}% (+80%) | Prec: {tuned_metrics['test_precision_class1']*100:.1f}% | F1: {tuned_metrics['test_f1_class1']:.4f} (+51%)",
-                      fontsize=11.5, fontweight='bold', pad=8)
-    axes[1].set_xlabel('Predicted Label', fontsize=10, fontweight='bold')
-    axes[1].set_ylabel('True Label', fontsize=10, fontweight='bold')
-    axes[1].set_xticklabels(['Retained (0)', 'Departed (1)'])
-    axes[1].set_yticklabels(['Retained (0)', 'Departed (1)'])
+    ax = sns.heatmap(cm, annot=labels, fmt='', cmap=cmap, cbar=False,
+                     annot_kws={'fontsize': 11, 'fontweight': 'bold'},
+                     linewidths=1.5, linecolor='#CBD5E1')
     
-    plt.suptitle("Task 8: Confusion Matrix Comparison — Baseline vs Hyperparameter Tuned Random Forest",
-                 fontsize=13, fontweight='bold', y=0.98)
+    plt.title(f"{model_name} — {tuning_status}\nTest N = {tot} | Recall: {rec*100:.2f}% | Precision: {prec*100:.2f}% | F1: {f1:.4f}",
+              fontsize=11, fontweight='bold', pad=14, color='#0F172A')
+    plt.xlabel('Predicted Class', fontweight='bold', fontsize=10, labelpad=8)
+    plt.ylabel('Actual Class', fontweight='bold', fontsize=10, labelpad=8)
+    ax.set_xticklabels(['No Attrition (0)', 'Attrition (1)'], fontsize=9.5)
+    ax.set_yticklabels(['No Attrition (0)', 'Attrition (1)'], fontsize=9.5)
+    
     plt.tight_layout()
-    fig_cm_path = os.path.join(FIGURES_DIR, "task8_confusion_matrix_before_vs_after.png")
-    plt.savefig(fig_cm_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved Figure 8.1 to: {fig_cm_path}")
+    print(f"Saved confusion matrix image to: {output_path}")
 
-    # Plot 2: ROC Curve Comparison Before vs After
-    fpr_base, tpr_base, _ = roc_curve(y_test, y_test_proba_base)
-    fpr_tuned, tpr_tuned, _ = roc_curve(y_test, y_test_proba_tuned)
-    
-    plt.figure(figsize=(8.5, 6.5), dpi=300)
-    plt.plot(fpr_base, tpr_base, color='#059669', lw=2.2, linestyle='--',
-             label=f"Baseline Random Forest (AUC = {base_metrics['test_roc_auc']:.4f})")
-    plt.plot(fpr_tuned, tpr_tuned, color='#7C3AED', lw=2.6, linestyle='-',
-             label=f"Tuned Random Forest (AUC = {tuned_metrics['test_roc_auc']:.4f})")
+
+def render_roc_curve_image(fpr: np.ndarray, tpr: np.ndarray, roc_auc: float,
+                           model_name: str, tuning_status: str, color: str, output_path: str):
+    """Render an individual publication-grade ROC curve image."""
+    plt.figure(figsize=(7, 5.5), dpi=300)
+    plt.plot(fpr, tpr, color=color, lw=2.5,
+             label=f"{model_name} ({tuning_status})\nROC-AUC = {roc_auc:.4f}")
     plt.plot([0, 1], [0, 1], color='#94A3B8', linestyle=':', lw=1.5, label='Chance Baseline (AUC = 0.5000)')
     
     plt.xlim([-0.01, 1.01])
     plt.ylim([-0.01, 1.03])
-    plt.xlabel('False Positive Rate (1 - Specificity)', fontsize=11, fontweight='bold', labelpad=8)
-    plt.ylabel('True Positive Rate (Sensitivity / Recall)', fontsize=11, fontweight='bold', labelpad=8)
-    plt.title('Task 8: Receiver Operating Characteristic (ROC) Comparison\nBaseline vs Tuned Random Forest on Held-Out Test Set',
-              fontsize=12, fontweight='bold', pad=12)
+    plt.xlabel('False Positive Rate (1 - Specificity)', fontsize=10.5, fontweight='bold', labelpad=8)
+    plt.ylabel('True Positive Rate (Sensitivity / Recall)', fontsize=10.5, fontweight='bold', labelpad=8)
+    plt.title(f"Receiver Operating Characteristic (ROC)\n{model_name} ({tuning_status}) — Held-Out Test Set (N = 294)",
+              fontsize=11.5, fontweight='bold', pad=12, color='#0F172A')
     plt.grid(True, linestyle='--', alpha=0.5)
-    plt.legend(loc='lower right', frameon=True, fontsize=10.5)
+    plt.legend(loc='lower right', frameon=True, fontsize=10)
     plt.tight_layout()
-    fig_roc_path = os.path.join(FIGURES_DIR, "task8_roc_curve_before_vs_after.png")
-    plt.savefig(fig_roc_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved Figure 8.2 to: {fig_roc_path}")
+    print(f"Saved ROC curve image to: {output_path}")
 
-    # Plot 3: Side-by-side metric comparison bar chart
-    metrics_names = ['Recall (Yes)', 'F1-Score (Yes)', 'Precision (Yes)', 'Test Acc', 'ROC-AUC']
-    base_vals = [
-        base_metrics['test_recall_class1'] * 100,
-        base_metrics['test_f1_class1'] * 100,
-        base_metrics['test_precision_class1'] * 100,
-        base_metrics['test_accuracy'] * 100,
-        base_metrics['test_roc_auc'] * 100
-    ]
-    tuned_vals = [
-        tuned_metrics['test_recall_class1'] * 100,
-        tuned_metrics['test_f1_class1'] * 100,
-        tuned_metrics['test_precision_class1'] * 100,
-        tuned_metrics['test_accuracy'] * 100,
-        tuned_metrics['test_roc_auc'] * 100
-    ]
+
+def render_combined_classification_report_image(entries: Dict[str, Dict[str, Any]], output_path: str):
+    """Render combined 4-panel publication comparison showing classification reports for all 4 model states."""
+    fig, axes = plt.subplots(2, 2, figsize=(18, 11), dpi=300)
+    axes = axes.flatten()
     
-    x = np.arange(len(metrics_names))
-    width = 0.35
+    col_labels = ['Class / Metric', 'Precision', 'Recall', 'F1-Score', 'Support']
     
-    plt.figure(figsize=(10.5, 6), dpi=300)
-    rects1 = plt.bar(x - width/2, base_vals, width, label='Baseline Random Forest (Default)', color='#059669', alpha=0.9, edgecolor='#064E3B')
-    rects2 = plt.bar(x + width/2, tuned_vals, width, label='Tuned Random Forest (CV-Optimized)', color='#7C3AED', alpha=0.9, edgecolor='#4C1D95')
-    
-    plt.ylabel('Percentage / Score (%)', fontsize=11, fontweight='bold')
-    plt.title('Task 8: Performance Metrics Progression (Baseline vs Tuned Model)\nMassive Gains in Recall (+80%) and F1-Score (+51%)', fontsize=12, fontweight='bold', pad=12)
-    plt.xticks(x, metrics_names, fontsize=10.5, fontweight='bold')
-    plt.ylim(0, 100)
-    plt.grid(axis='y', linestyle='--', alpha=0.5)
-    plt.legend(loc='upper right', frameon=True, fontsize=10)
-    
-    for rect in rects1:
-        h = rect.get_height()
-        plt.text(rect.get_x() + rect.get_width()/2., h + 1.2, f"{h:.1f}%", ha='center', va='bottom', fontsize=8.5, color='#064E3B', fontweight='bold')
-    for rect in rects2:
-        h = rect.get_height()
-        plt.text(rect.get_x() + rect.get_width()/2., h + 1.2, f"{h:.1f}%", ha='center', va='bottom', fontsize=8.5, color='#4C1D95', fontweight='bold')
+    for idx, (key, data) in enumerate(entries.items()):
+        ax = axes[idx]
+        ax.axis('off')
         
-    plt.tight_layout()
-    fig_bars_path = os.path.join(FIGURES_DIR, "task8_metric_comparison_bars.png")
-    plt.savefig(fig_bars_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    print(f"Saved Figure 8.3 to: {fig_bars_path}")
-
-    # Plot 4: Operational Threshold Tradeoff Curve
-    plt.figure(figsize=(9.5, 6), dpi=300)
-    plt.plot(thresh_df['threshold'], thresh_df['recall'], color='#DC2626', lw=2.2, label='Recall (Sensitivity)')
-    plt.plot(thresh_df['threshold'], thresh_df['precision'], color='#2563EB', lw=2.2, label='Precision')
-    plt.plot(thresh_df['threshold'], thresh_df['f1'], color='#7C3AED', lw=2.6, label='F1-Score')
-    plt.axvline(x=0.50, color='#64748B', linestyle='--', lw=1.5, label='Standard Threshold (tau = 0.50)')
-    plt.axvline(x=0.42, color='#059669', linestyle=':', lw=1.8, label='Optimal F1 Threshold (tau = 0.42, Rec=63.8%)')
+        rep = data['clf_report_dict']
+        table_rows = [
+            ['No Attrition (0)', f"{rep['Retained (0)']['precision']:.4f}", f"{rep['Retained (0)']['recall']:.4f}", f"{rep['Retained (0)']['f1-score']:.4f}", f"{int(rep['Retained (0)']['support'])}"],
+            ['Attrition (1)', f"{rep['Departed (1)']['precision']:.4f}", f"{rep['Departed (1)']['recall']:.4f}", f"{rep['Departed (1)']['f1-score']:.4f}", f"{int(rep['Departed (1)']['support'])}"],
+            ['accuracy', '', '', f"{rep['accuracy']:.4f}", f"{int(rep['macro avg']['support'])}"],
+            ['macro avg', f"{rep['macro avg']['precision']:.4f}", f"{rep['macro avg']['recall']:.4f}", f"{rep['macro avg']['f1-score']:.4f}", f"{int(rep['macro avg']['support'])}"],
+            ['weighted avg', f"{rep['weighted avg']['precision']:.4f}", f"{rep['weighted avg']['recall']:.4f}", f"{rep['weighted avg']['f1-score']:.4f}", f"{int(rep['weighted avg']['support'])}"]
+        ]
+        
+        table = ax.table(
+            cellText=table_rows,
+            colLabels=col_labels,
+            cellLoc='center',
+            loc='center',
+            bbox=[0.02, 0.08, 0.96, 0.72]
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(10)
+        
+        header_color = '#1E3A8A' if 'Logistic' in data['model_name'] else '#064E3B'
+        
+        for (r, c), cell in table.get_celld().items():
+            cell.set_edgecolor('#CBD5E1')
+            if r == 0:
+                cell.set_facecolor('#0F172A')
+                cell.get_text().set_color('white')
+                cell.get_text().set_weight('bold')
+                cell.set_height(0.14)
+            elif r == 2:  # Minority class (Attrition = 1)
+                cell.set_facecolor('#FEF3C7' if 'Before' in data['tuning_status'] else '#DCFCE7')
+                cell.get_text().set_color('#92400E' if 'Before' in data['tuning_status'] else '#166534')
+                cell.get_text().set_weight('bold')
+            elif r == 3:  # Accuracy
+                cell.set_facecolor('#F8FAFC')
+                cell.get_text().set_weight('bold' if c == 0 else 'normal')
+            elif r in [4, 5]:  # Averages
+                cell.set_facecolor('#F1F5F9')
+                cell.get_text().set_weight('bold' if c == 0 else 'normal')
+            else:
+                cell.set_facecolor('#FFFFFF')
+                
+        status_tag = "BEFORE TUNING (BASELINE)" if "Before" in data['tuning_status'] else "AFTER TUNING (OPTIMIZED)"
+        ax.set_title(
+            f"[{idx+1}] {data['model_name']} — {status_tag}\n"
+            f"Accuracy: {data['accuracy']*100:.2f}% | Attrition Recall: {data['recall_class1']*100:.2f}% | "
+            f"F1: {data['f1_class1']:.4f} | ROC-AUC: {data['roc_auc']:.4f}",
+            fontsize=11.5, fontweight='bold', color='#0F172A', pad=12
+        )
+        
+    plt.suptitle("AttritionIQ — Task 8: Combined Classification Report Benchmark (Before vs After Hyperparameter Tuning)\n"
+                 "Evaluated on Held-Out Test Set (N = 294, 247 No Attrition vs 47 Attrition)",
+                 fontsize=14, fontweight='bold', color='#0F172A', y=0.98)
     
-    plt.xlabel('Probability Decision Threshold (tau)', fontsize=11, fontweight='bold')
-    plt.ylabel('Metric Score', fontsize=11, fontweight='bold')
-    plt.title('Task 8: Operational Decision Support — Threshold vs Recall/Precision Tradeoff\n(Enabling HR Leadership to Balance Alert Fatigue vs Missing Resignations)', fontsize=11.5, fontweight='bold', pad=12)
-    plt.grid(True, linestyle='--', alpha=0.5)
-    plt.legend(loc='lower center', frameon=True, fontsize=9.5)
     plt.tight_layout()
-    fig_thresh_path = os.path.join(FIGURES_DIR, "task8_threshold_tradeoff_curve.png")
-    plt.savefig(fig_thresh_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
     plt.close()
-    print(f"Saved Figure 8.4 to: {fig_thresh_path}")
-
-    # Save summary JSON
-    tuning_summary = {
-        'task': 'Task 8 - Hyperparameter Optimization',
-        'model': 'Random Forest Classifier',
-        'optimization_strategy': 'GridSearchCV + Stratified 5-Fold Cross Validation (Scoring: F1)',
-        'best_hyperparameters': best_params,
-        'best_cv_score_f1': float(best_cv_score),
-        'comparison_before_vs_after': {
-            'test_accuracy': {
-                'baseline': base_metrics['test_accuracy'],
-                'tuned': tuned_metrics['test_accuracy'],
-                'delta': tuned_metrics['test_accuracy'] - base_metrics['test_accuracy']
-            },
-            'train_accuracy': {
-                'baseline': base_metrics['train_accuracy'],
-                'tuned': tuned_metrics['train_accuracy'],
-                'delta': tuned_metrics['train_accuracy'] - base_metrics['train_accuracy']
-            },
-            'overfitting_gap_percentage': {
-                'baseline': base_metrics['gap_accuracy'],
-                'tuned': tuned_metrics['gap_accuracy'],
-                'delta': tuned_metrics['gap_accuracy'] - base_metrics['gap_accuracy']
-            },
-            'test_recall_attrition_yes': {
-                'baseline': base_metrics['test_recall_class1'],
-                'tuned': tuned_metrics['test_recall_class1'],
-                'delta': tuned_metrics['test_recall_class1'] - base_metrics['test_recall_class1'],
-                'relative_boost_pct': ((tuned_metrics['test_recall_class1'] - base_metrics['test_recall_class1']) / base_metrics['test_recall_class1']) * 100
-            },
-            'test_precision_attrition_yes': {
-                'baseline': base_metrics['test_precision_class1'],
-                'tuned': tuned_metrics['test_precision_class1'],
-                'delta': tuned_metrics['test_precision_class1'] - base_metrics['test_precision_class1'],
-                'relative_boost_pct': ((tuned_metrics['test_precision_class1'] - base_metrics['test_precision_class1']) / base_metrics['test_precision_class1']) * 100
-            },
-            'test_f1_attrition_yes': {
-                'baseline': base_metrics['test_f1_class1'],
-                'tuned': tuned_metrics['test_f1_class1'],
-                'delta': tuned_metrics['test_f1_class1'] - base_metrics['test_f1_class1'],
-                'relative_boost_pct': ((tuned_metrics['test_f1_class1'] - base_metrics['test_f1_class1']) / base_metrics['test_f1_class1']) * 100
-            },
-            'test_roc_auc': {
-                'baseline': base_metrics['test_roc_auc'],
-                'tuned': tuned_metrics['test_roc_auc'],
-                'delta': tuned_metrics['test_roc_auc'] - base_metrics['test_roc_auc']
-            },
-            'confusion_matrix': {
-                'baseline': {
-                    'TP': base_metrics['cm_test'][1][1],
-                    'FN': base_metrics['cm_test'][1][0],
-                    'FP': base_metrics['cm_test'][0][1],
-                    'TN': base_metrics['cm_test'][0][0]
-                },
-                'tuned': {
-                    'TP': int(cm_tuned[1, 1]),
-                    'FN': int(cm_tuned[1, 0]),
-                    'FP': int(cm_tuned[0, 1]),
-                    'TN': int(cm_tuned[0, 0])
-                }
-            }
-        }
-    }
-    
-    summary_path = os.path.join(REPORTS_DIR, "task8_hyperparameter_tuning_summary.json")
-    with open(summary_path, 'w', encoding='utf-8') as f:
-        json.dump(tuning_summary, f, indent=4)
-    print(f"Saved Task 8 tuning summary JSON to: {summary_path}")
-
-    return tuning_summary
+    print(f"Generated combined classification report image: {output_path}")
 
 
 def render_standard_classification_report_image(model_name: str, rep_dict: dict, roc_auc: float, output_path: str):
-    """Render standard Scikit-Learn classification report as a publication-grade image."""
+    """Render standard Scikit-Learn classification report as a single publication-grade image."""
     fig, ax = plt.subplots(figsize=(9, 4.2), dpi=300)
     ax.axis('off')
     
     rows = [
-        ['Retained (0)', f"{rep_dict['Retained (0)']['precision']:.4f}", f"{rep_dict['Retained (0)']['recall']:.4f}", f"{rep_dict['Retained (0)']['f1-score']:.4f}", f"{int(rep_dict['Retained (0)']['support'])}"],
-        ['Departed (1)', f"{rep_dict['Departed (1)']['precision']:.4f}", f"{rep_dict['Departed (1)']['recall']:.4f}", f"{rep_dict['Departed (1)']['f1-score']:.4f}", f"{int(rep_dict['Departed (1)']['support'])}"],
+        ['No Attrition (0)', f"{rep_dict['Retained (0)']['precision']:.4f}", f"{rep_dict['Retained (0)']['recall']:.4f}", f"{rep_dict['Retained (0)']['f1-score']:.4f}", f"{int(rep_dict['Retained (0)']['support'])}"],
+        ['Attrition (1)', f"{rep_dict['Departed (1)']['precision']:.4f}", f"{rep_dict['Departed (1)']['recall']:.4f}", f"{rep_dict['Departed (1)']['f1-score']:.4f}", f"{int(rep_dict['Departed (1)']['support'])}"],
         ['accuracy', '', '', f"{rep_dict['accuracy']:.4f}", f"{int(rep_dict['macro avg']['support'])}"],
         ['macro avg', f"{rep_dict['macro avg']['precision']:.4f}", f"{rep_dict['macro avg']['recall']:.4f}", f"{rep_dict['macro avg']['f1-score']:.4f}", f"{int(rep_dict['macro avg']['support'])}"],
         ['weighted avg', f"{rep_dict['weighted avg']['precision']:.4f}", f"{rep_dict['weighted avg']['recall']:.4f}", f"{rep_dict['weighted avg']['f1-score']:.4f}", f"{int(rep_dict['weighted avg']['support'])}"]
@@ -725,7 +478,7 @@ def render_standard_classification_report_image(model_name: str, rep_dict: dict,
         elif i == 2:
             cell.set_facecolor('#EFF6FF')
             cell.get_text().set_color('#1E3A8A')
-            cell.get_text().set_weight('bold' if j in [0, 2, 3] else 'normal')
+            cell.get_text().set_weight('bold')
             cell.set_height(0.12)
         elif i == 3:
             cell.set_facecolor('#F8FAFC')
@@ -748,7 +501,460 @@ def render_standard_classification_report_image(model_name: str, rep_dict: dict,
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved classification report figure to: {output_path}")
+    print(f"Saved single classification report image to: {output_path}")
+
+
+# ==============================================================================
+# TASK 8: SYSTEMATIC MODEL OPTIMIZATION & DEPLOYMENT PIPELINE
+# ==============================================================================
+
+def run_task_8(X_train: pd.DataFrame, y_train: pd.Series,
+               X_test: pd.DataFrame, y_test: pd.Series):
+    """
+    Execute Task 8 for Random Forest and Logistic Regression (excluding Decision Tree):
+    1. Train & evaluate baseline estimators (Before Tuning).
+    2. Configure 5-Fold Stratified Cross Validation.
+    3. Perform GridSearchCV optimizing minority F1-score on training data.
+    4. Serialize tuned standalone estimators.
+    5. Explore operational decision thresholds using training out-of-fold cross-validation.
+    6. Construct and serialize the unified production Logistic Regression Pipeline.
+    7. Evaluate all 4 model states on untouched held-out test split (N = 294).
+    8. Generate the combined classification report image and JSON.
+    9. Generate 4 separate confusion matrix images (Before & After).
+    10. Generate 4 separate ROC curve images (Before & After).
+    """
+    print(f"\n{'='*80}\nEXECUTING TASK 8: MODEL OPTIMIZATION, EVALUATION & DEPLOYMENT PIPELINE\n{'='*80}")
+    
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    
+    # --------------------------------------------------------------------------
+    # 1. Baseline Estimators (Before Tuning)
+    # --------------------------------------------------------------------------
+    rf_base_path = os.path.join(MODELS_DIR, "random_forest.joblib")
+    if os.path.exists(rf_base_path):
+        base_rf = joblib.load(rf_base_path)
+    else:
+        base_rf = RandomForestClassifier(
+            n_estimators=100, max_depth=8, min_samples_split=6, min_samples_leaf=2,
+            class_weight='balanced', random_state=42, n_jobs=-1
+        )
+        base_rf.fit(X_train, y_train)
+        joblib.dump(base_rf, rf_base_path)
+        
+    lr_base_path = os.path.join(MODELS_DIR, "logistic_regression.joblib")
+    if os.path.exists(lr_base_path):
+        base_lr = joblib.load(lr_base_path)
+    else:
+        base_lr = LogisticRegression(
+            C=1.0, penalty='l2', solver='lbfgs', class_weight='balanced',
+            max_iter=1000, random_state=42
+        )
+        base_lr.fit(X_train, y_train)
+        joblib.dump(base_lr, lr_base_path)
+        
+    print("\n[Baseline Estimators Verified and Ready]")
+    
+    # --------------------------------------------------------------------------
+    # 2. Hyperparameter Optimization via GridSearchCV (Training Split Only)
+    # --------------------------------------------------------------------------
+    print("\nConfiguring GridSearchCV hyperparameter tuning for Random Forest and Logistic Regression...")
+    
+    param_grid_rf = {
+        'n_estimators': [100, 150, 200],
+        'max_depth': [4, 6, 8, 10],
+        'min_samples_split': [4, 8, 12],
+        'min_samples_leaf': [2, 4, 6],
+        'class_weight': ['balanced', 'balanced_subsample', {0: 1, 1: 3.5}]
+    }
+    
+    param_grid_lr = {
+        'C': [0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0],
+        'penalty': ['l1', 'l2'],
+        'solver': ['liblinear', 'saga'],
+        'class_weight': ['balanced', {0: 1, 1: 3.0}, {0: 1, 1: 4.0}, {0: 1, 1: 5.0}]
+    }
+    
+    print("\n--- Tuning Random Forest ---")
+    grid_rf = GridSearchCV(
+        estimator=RandomForestClassifier(random_state=42, n_jobs=-1),
+        param_grid=param_grid_rf,
+        scoring='f1',
+        cv=cv,
+        n_jobs=-1,
+        verbose=0
+    )
+    grid_rf.fit(X_train, y_train)
+    best_rf = grid_rf.best_estimator_
+    best_rf_params = grid_rf.best_params_
+    best_rf_cv_score = grid_rf.best_score_
+    
+    print(f"Optimal RF 5-Fold CV F1: {best_rf_cv_score:.4f}")
+    print(f"Best RF Parameters: {best_rf_params}")
+    
+    # Serialize tuned RF model
+    tuned_rf_path = os.path.join(MODELS_DIR, "random_forest_tuned.joblib")
+    joblib.dump(best_rf, tuned_rf_path)
+    print(f"Saved tuned Random Forest estimator to: {tuned_rf_path}")
+    
+    print("\n--- Tuning Logistic Regression ---")
+    grid_lr = GridSearchCV(
+        estimator=LogisticRegression(random_state=42, max_iter=1000),
+        param_grid=param_grid_lr,
+        scoring='f1',
+        cv=cv,
+        n_jobs=-1,
+        verbose=0
+    )
+    grid_lr.fit(X_train, y_train)
+    best_lr = grid_lr.best_estimator_
+    best_lr_params = grid_lr.best_params_
+    best_lr_cv_score = grid_lr.best_score_
+    
+    print(f"Optimal LR 5-Fold CV F1: {best_lr_cv_score:.4f}")
+    print(f"Best LR Parameters: {best_lr_params}")
+    
+    # Serialize tuned LR model
+    tuned_lr_path = os.path.join(MODELS_DIR, "logistic_regression_tuned.joblib")
+    joblib.dump(best_lr, tuned_lr_path)
+    print(f"Saved tuned Logistic Regression estimator to: {tuned_lr_path}")
+    
+    # --------------------------------------------------------------------------
+    # 3. Leakage-Free Decision Threshold Exploration via Out-Of-Fold CV
+    # --------------------------------------------------------------------------
+    print("\nExploring operational decision thresholds on training data via 5-Fold Cross-Validation...")
+    cv_oof_proba_lr = cross_val_predict(best_lr, X_train, y_train, cv=cv, method='predict_proba')[:, 1]
+    
+    threshold_tradeoffs = []
+    for tau in np.arange(0.20, 0.81, 0.05):
+        t_pred = (cv_oof_proba_lr >= tau).astype(int)
+        t_cm = confusion_matrix(y_train, t_pred)
+        threshold_tradeoffs.append({
+            'threshold': float(round(tau, 2)),
+            'cv_recall': float(recall_score(y_train, t_pred, zero_division=0)),
+            'cv_precision': float(precision_score(y_train, t_pred, zero_division=0)),
+            'cv_f1': float(f1_score(y_train, t_pred, zero_division=0)),
+            'cv_accuracy': float(accuracy_score(y_train, t_pred)),
+            'TP': int(t_cm[1, 1]),
+            'FP': int(t_cm[0, 1]),
+            'FN': int(t_cm[1, 0]),
+            'TN': int(t_cm[0, 0])
+        })
+    print(f"Threshold exploration completed across {len(threshold_tradeoffs)} candidate operating cutoffs.")
+
+    # --------------------------------------------------------------------------
+    # 4. Production Deployment Pipeline Assembly (Logistic Regression)
+    # --------------------------------------------------------------------------
+    preprocessor_path = os.path.join(DATA_DIR, "fitted_preprocessor.joblib")
+    if os.path.exists(preprocessor_path):
+        fitted_preprocessor = joblib.load(preprocessor_path)
+        production_pipeline = Pipeline([
+            ('preprocessor', fitted_preprocessor),
+            ('classifier', best_lr)
+        ])
+        
+        # Serialize production pipeline artifacts
+        prod_path_primary = os.path.join(MODELS_DIR, "attrition_model_pipeline.joblib")
+        prod_path_lr = os.path.join(MODELS_DIR, "attrition_logistic_pipeline.joblib")
+        
+        joblib.dump(production_pipeline, prod_path_primary)
+        joblib.dump(production_pipeline, prod_path_lr)
+        print(f"\n[PRODUCTION ARTIFACT CREATED]")
+        print(f"  * Serialized champion Logistic Regression pipeline to: {prod_path_primary}")
+        print(f"  * Serialized champion Logistic Regression pipeline to: {prod_path_lr}")
+    else:
+        print(f"\nWARNING: {preprocessor_path} not found. Production pipeline assembly skipped.")
+
+    # --------------------------------------------------------------------------
+    # 5. Comprehensive Evaluation Across the 4 Model States on Held-Out Test Set
+    # --------------------------------------------------------------------------
+    models_to_evaluate = {
+        'rf_before': {
+            'model_name': 'Random Forest',
+            'tuning_status': 'Before Tuning',
+            'estimator': base_rf,
+            'cm_cmap': 'Blues',
+            'roc_color': '#2563EB',
+            'cm_out': os.path.join(FIGURES_DIR, "task8_random_forest_confusion_matrix_before.png"),
+            'roc_out': os.path.join(FIGURES_DIR, "task8_random_forest_roc_before.png"),
+            'best_params': {
+                'n_estimators': 100, 'max_depth': 8, 'min_samples_split': 6,
+                'min_samples_leaf': 2, 'class_weight': 'balanced'
+            },
+            'cv_score': None
+        },
+        'rf_after': {
+            'model_name': 'Random Forest',
+            'tuning_status': 'After Tuning',
+            'estimator': best_rf,
+            'cm_cmap': 'Greens',
+            'roc_color': '#059669',
+            'cm_out': os.path.join(FIGURES_DIR, "task8_random_forest_confusion_matrix_after.png"),
+            'roc_out': os.path.join(FIGURES_DIR, "task8_random_forest_roc_after.png"),
+            'best_params': best_rf_params,
+            'cv_score': float(best_rf_cv_score)
+        },
+        'lr_before': {
+            'model_name': 'Logistic Regression',
+            'tuning_status': 'Before Tuning',
+            'estimator': base_lr,
+            'cm_cmap': 'Oranges',
+            'roc_color': '#D97706',
+            'cm_out': os.path.join(FIGURES_DIR, "task8_logistic_regression_confusion_matrix_before.png"),
+            'roc_out': os.path.join(FIGURES_DIR, "task8_logistic_regression_roc_before.png"),
+            'best_params': {
+                'C': 1.0, 'penalty': 'l2', 'solver': 'lbfgs', 'class_weight': 'balanced'
+            },
+            'cv_score': None
+        },
+        'lr_after': {
+            'model_name': 'Logistic Regression',
+            'tuning_status': 'After Tuning',
+            'estimator': best_lr,
+            'cm_cmap': 'Purples',
+            'roc_color': '#7C3AED',
+            'cm_out': os.path.join(FIGURES_DIR, "task8_logistic_regression_confusion_matrix_after.png"),
+            'roc_out': os.path.join(FIGURES_DIR, "task8_logistic_regression_roc_after.png"),
+            'best_params': best_lr_params,
+            'cv_score': float(best_lr_cv_score)
+        }
+    }
+    
+    evaluation_entries = {}
+    
+    print("\n" + "="*80)
+    print("HELD-OUT TEST SET BENCHMARK RESULTS (N = 294, 247 Retained vs 47 Departed)")
+    print("="*80)
+    
+    for key, cfg in models_to_evaluate.items():
+        est = cfg['estimator']
+        y_test_pred = est.predict(X_test)
+        y_test_proba = est.predict_proba(X_test)[:, 1]
+        
+        acc = float(accuracy_score(y_test, y_test_pred))
+        rec_1 = float(recall_score(y_test, y_test_pred, pos_label=1, zero_division=0))
+        prec_1 = float(precision_score(y_test, y_test_pred, pos_label=1, zero_division=0))
+        f1_1 = float(f1_score(y_test, y_test_pred, pos_label=1, zero_division=0))
+        auc = float(roc_auc_score(y_test, y_test_proba))
+        cm = confusion_matrix(y_test, y_test_pred)
+        fpr, tpr, _ = roc_curve(y_test, y_test_proba)
+        
+        clf_rep_dict = classification_report(
+            y_test, y_test_pred,
+            target_names=['Retained (0)', 'Departed (1)'],
+            digits=4,
+            output_dict=True
+        )
+        clf_rep_str = classification_report(
+            y_test, y_test_pred,
+            target_names=['Retained (0)', 'Departed (1)'],
+            digits=4
+        )
+        
+        print(f"\n{'-'*75}\n{cfg['model_name']} ({cfg['tuning_status']})\n{'-'*75}")
+        print(clf_rep_str)
+        print(f"Accuracy: {acc*100:.2f}% | Recall (1): {rec_1*100:.2f}% | Precision (1): {prec_1*100:.2f}% | F1: {f1_1:.4f} | ROC-AUC: {auc:.4f}")
+        
+        # 6. Render individual confusion matrix image
+        render_confusion_matrix_image(
+            cm=cm,
+            model_name=cfg['model_name'],
+            tuning_status=cfg['tuning_status'],
+            rec=rec_1,
+            prec=prec_1,
+            f1=f1_1,
+            cmap=cfg['cm_cmap'],
+            output_path=cfg['cm_out']
+        )
+        
+        # 7. Render individual ROC curve image
+        render_roc_curve_image(
+            fpr=fpr,
+            tpr=tpr,
+            roc_auc=auc,
+            model_name=cfg['model_name'],
+            tuning_status=cfg['tuning_status'],
+            color=cfg['roc_color'],
+            output_path=cfg['roc_out']
+        )
+        
+        evaluation_entries[key] = {
+            'model_name': cfg['model_name'],
+            'tuning_status': cfg['tuning_status'],
+            'best_hyperparameters': cfg['best_params'],
+            'cv_f1_score': cfg['cv_score'],
+            'accuracy': acc,
+            'recall_class1': rec_1,
+            'precision_class1': prec_1,
+            'f1_class1': f1_1,
+            'roc_auc': auc,
+            'confusion_matrix': {
+                'true_negatives': int(cm[0, 0]),
+                'false_positives': int(cm[0, 1]),
+                'false_negatives': int(cm[1, 0]),
+                'true_positives': int(cm[1, 1])
+            },
+            'clf_report_dict': clf_rep_dict,
+            'raw_text_report': clf_rep_str,
+            'fpr': fpr.tolist(),
+            'tpr': tpr.tolist()
+        }
+
+    # --------------------------------------------------------------------------
+    # 8. Combined Classification Report (Image & JSON)
+    # --------------------------------------------------------------------------
+    comb_img_path = os.path.join(FIGURES_DIR, "task8_combined_classification_report.png")
+    render_combined_classification_report_image(evaluation_entries, comb_img_path)
+    
+    comb_json_path = os.path.join(JSON_REPORTS_DIR, "task8_combined_classification_report.json")
+    with open(comb_json_path, 'w', encoding='utf-8') as f:
+        json.dump({
+            'project': 'AttritionIQ — Intelligent Employee Attrition Prediction System',
+            'task': 'Task 8 — Systematic Model Optimization and Cross-Architecture Benchmark',
+            'positive_class': 'Attrition = Yes (1)',
+            'negative_class': 'No Attrition (0)',
+            'test_set_size': len(y_test),
+            'test_class_distribution': {
+                'no_attrition_count': int(sum(y_test == 0)),
+                'attrition_count': int(sum(y_test == 1)),
+                'attrition_prevalence_pct': float(sum(y_test == 1) / len(y_test) * 100)
+            },
+            'champion_production_model': {
+                'model_name': 'Logistic Regression',
+                'artifact_pipeline': 'models/attrition_model_pipeline.joblib',
+                'artifact_linear_pipeline': 'models/attrition_logistic_pipeline.joblib',
+                'optimal_hyperparameters': best_lr_params,
+                'best_cv_f1': float(best_lr_cv_score),
+                'test_accuracy': evaluation_entries['lr_after']['accuracy'],
+                'test_f1': evaluation_entries['lr_after']['f1_class1'],
+                'test_recall': evaluation_entries['lr_after']['recall_class1'],
+                'test_precision': evaluation_entries['lr_after']['precision_class1'],
+                'test_roc_auc': evaluation_entries['lr_after']['roc_auc']
+            },
+            'models_benchmark': {
+                key: {
+                    'model_name': v['model_name'],
+                    'tuning_status': v['tuning_status'],
+                    'hyperparameters': v['best_hyperparameters'],
+                    'cv_f1_score': v['cv_f1_score'],
+                    'metrics': {
+                        'accuracy': v['accuracy'],
+                        'recall_attrition_yes': v['recall_class1'],
+                        'precision_attrition_yes': v['precision_class1'],
+                        'f1_attrition_yes': v['f1_class1'],
+                        'roc_auc': v['roc_auc']
+                    },
+                    'confusion_matrix': v['confusion_matrix'],
+                    'classification_report_standard': v['clf_report_dict']
+                } for key, v in evaluation_entries.items()
+            }
+        }, f, indent=4)
+    print(f"Saved combined classification report JSON to: {comb_json_path}")
+
+    # --------------------------------------------------------------------------
+    # 9. Individual Tuned Reports & Overall Tuning Summary (Retained Linkages)
+    # --------------------------------------------------------------------------
+    # Tuned RF Report Image & JSON
+    render_standard_classification_report_image(
+        model_name="Random Forest (Tuned & Optimized)",
+        rep_dict=evaluation_entries['rf_after']['clf_report_dict'],
+        roc_auc=evaluation_entries['rf_after']['roc_auc'],
+        output_path=os.path.join(FIGURES_DIR, "classification_report_random_forest_tuned.png")
+    )
+    with open(os.path.join(JSON_REPORTS_DIR, "classification_report_random_forest_tuned.json"), 'w', encoding='utf-8') as f:
+        json.dump({
+            'model_name': 'Random Forest (Tuned & Optimized)',
+            'short_name': 'random_forest_tuned',
+            'test_sample_size': len(y_test),
+            'best_hyperparameters': best_rf_params,
+            'best_cv_f1': float(best_rf_cv_score),
+            'metrics_summary': {
+                'test_accuracy': evaluation_entries['rf_after']['accuracy'],
+                'test_roc_auc': evaluation_entries['rf_after']['roc_auc'],
+                'precision_attrition_yes': evaluation_entries['rf_after']['precision_class1'],
+                'recall_attrition_yes': evaluation_entries['rf_after']['recall_class1'],
+                'f1_attrition_yes': evaluation_entries['rf_after']['f1_class1']
+            },
+            'confusion_matrix': evaluation_entries['rf_after']['confusion_matrix'],
+            'classification_report_standard': evaluation_entries['rf_after']['clf_report_dict']
+        }, f, indent=4)
+
+    # Tuned LR Report Image & JSON
+    render_standard_classification_report_image(
+        model_name="Logistic Regression (Tuned & Calibrated)",
+        rep_dict=evaluation_entries['lr_after']['clf_report_dict'],
+        roc_auc=evaluation_entries['lr_after']['roc_auc'],
+        output_path=os.path.join(FIGURES_DIR, "classification_report_logistic_regression_tuned.png")
+    )
+    with open(os.path.join(JSON_REPORTS_DIR, "classification_report_logistic_regression_tuned.json"), 'w', encoding='utf-8') as f:
+        json.dump({
+            'model_name': 'Logistic Regression (Tuned & Calibrated)',
+            'short_name': 'logistic_regression_tuned',
+            'test_sample_size': len(y_test),
+            'best_hyperparameters': best_lr_params,
+            'best_cv_f1': float(best_lr_cv_score),
+            'metrics_summary': {
+                'test_accuracy': evaluation_entries['lr_after']['accuracy'],
+                'test_roc_auc': evaluation_entries['lr_after']['roc_auc'],
+                'precision_attrition_yes': evaluation_entries['lr_after']['precision_class1'],
+                'recall_attrition_yes': evaluation_entries['lr_after']['recall_class1'],
+                'f1_attrition_yes': evaluation_entries['lr_after']['f1_class1']
+            },
+            'confusion_matrix': evaluation_entries['lr_after']['confusion_matrix'],
+            'classification_report_standard': evaluation_entries['lr_after']['clf_report_dict']
+        }, f, indent=4)
+
+    # Task 8 Summary JSON
+    summary_path = os.path.join(REPORTS_DIR, "task8_hyperparameter_tuning_summary.json")
+    with open(summary_path, 'w', encoding='utf-8') as f:
+        json.dump({
+            'task': 'Task 8 - Hyperparameter Optimization & Model Selection',
+            'production_champion_model': 'Logistic Regression',
+            'optimization_strategy': 'GridSearchCV + Stratified 5-Fold Cross-Validation (Scoring: F1)',
+            'models_evaluated': ['Random Forest', 'Logistic Regression'],
+            'decision_tree_status': 'Excluded from Task 8 tuning workflow',
+            'rf_best_params': best_rf_params,
+            'rf_cv_f1': float(best_rf_cv_score),
+            'lr_best_params': best_lr_params,
+            'lr_cv_f1': float(best_lr_cv_score),
+            'threshold_tradeoffs_training_cv': threshold_tradeoffs,
+            'before_after_comparison': {
+                'random_forest': {
+                    'baseline': {
+                        'accuracy': evaluation_entries['rf_before']['accuracy'],
+                        'recall': evaluation_entries['rf_before']['recall_class1'],
+                        'precision': evaluation_entries['rf_before']['precision_class1'],
+                        'f1': evaluation_entries['rf_before']['f1_class1'],
+                        'roc_auc': evaluation_entries['rf_before']['roc_auc']
+                    },
+                    'tuned': {
+                        'accuracy': evaluation_entries['rf_after']['accuracy'],
+                        'recall': evaluation_entries['rf_after']['recall_class1'],
+                        'precision': evaluation_entries['rf_after']['precision_class1'],
+                        'f1': evaluation_entries['rf_after']['f1_class1'],
+                        'roc_auc': evaluation_entries['rf_after']['roc_auc']
+                    }
+                },
+                'logistic_regression': {
+                    'baseline': {
+                        'accuracy': evaluation_entries['lr_before']['accuracy'],
+                        'recall': evaluation_entries['lr_before']['recall_class1'],
+                        'precision': evaluation_entries['lr_before']['precision_class1'],
+                        'f1': evaluation_entries['lr_before']['f1_class1'],
+                        'roc_auc': evaluation_entries['lr_before']['roc_auc']
+                    },
+                    'tuned': {
+                        'accuracy': evaluation_entries['lr_after']['accuracy'],
+                        'recall': evaluation_entries['lr_after']['recall_class1'],
+                        'precision': evaluation_entries['lr_after']['precision_class1'],
+                        'f1': evaluation_entries['lr_after']['f1_class1'],
+                        'roc_auc': evaluation_entries['lr_after']['roc_auc']
+                    }
+                }
+            }
+        }, f, indent=4)
+    print(f"Saved Task 8 hyperparameter tuning summary JSON to: {summary_path}")
+    
+    return evaluation_entries
 
 
 def main():
@@ -757,18 +963,26 @@ def main():
     # 1. Load baseline Random Forest for Task 7
     rf_baseline_path = os.path.join(MODELS_DIR, "random_forest.joblib")
     if not os.path.exists(rf_baseline_path):
-        raise FileNotFoundError(f"Missing {rf_baseline_path}. Please run model_trainer.py first.")
-    rf_model = joblib.load(rf_baseline_path)
-    
-    # 2. Run Task 7
+        print(f"Baseline {rf_baseline_path} not found. Fitting baseline Random Forest...")
+        rf_model = RandomForestClassifier(
+            n_estimators=100, max_depth=8, min_samples_split=6, min_samples_leaf=2,
+            class_weight='balanced', random_state=42, n_jobs=-1
+        )
+        rf_model.fit(X_train, y_train)
+        joblib.dump(rf_model, rf_baseline_path)
+    else:
+        rf_model = joblib.load(rf_baseline_path)
+        
+    # 2. Run Task 7: Feature Importance & Interpretability
     combined_importance, parent_mdi = run_task_7(rf_model, X_train, y_train, X_test, y_test, feature_names)
     
-    # 3. Run Task 8
-    tuning_summary = run_task_8(X_train, y_train, X_test, y_test, rf_baseline_path)
+    # 3. Run Task 8: Model Optimization (RF & LR Only)
+    evaluation_entries = run_task_8(X_train, y_train, X_test, y_test)
     
-    print("\n" + "="*75)
-    print("TASKS 7 AND 8 COMPLETED SUCCESSFULLY WITH ALL ARTIFACTS GENERATED!")
-    print("="*75)
+    print("\n" + "="*80)
+    print("CONSOLIDATED TASKS 7 AND 8 RUNNER COMPLETED SUCCESSFULLY!")
+    print("ALL REQUIRED FIGURES, JSON REPORTS, AND PRODUCTION ARTIFACTS GENERATED.")
+    print("="*80)
 
 
 if __name__ == '__main__':

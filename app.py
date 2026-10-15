@@ -160,7 +160,7 @@ PRODUCTION_PIPELINE_PATH = "models/attrition_model_pipeline.joblib"
 
 @st.cache_resource
 def load_champion_pipeline():
-    """Load the final champion Random Forest pipeline for local inference/fallback."""
+    """Load the final champion Logistic Regression pipeline for local inference/fallback."""
     if not os.path.exists(PRODUCTION_PIPELINE_PATH):
         return None
     try:
@@ -178,12 +178,13 @@ with st.sidebar:
     st.markdown("### 💼 AttritionIQ System")
     st.markdown("""
     **Production Classifier:**  
-    `Random Forest (Tuned Champion)`
+    `Logistic Regression (Tuned Champion)`
     
     **Validated Performance:**
-    - Test Accuracy: **82.65%**
-    - ROC-AUC Score: **0.7638**
-    - Lowest False Alarm Rate
+    - Test Accuracy: **83.67%**
+    - ROC-AUC Score: **0.7994**
+    - Minority Recall: **53.19%**
+    - Minority F1-Score: **0.5102**
     """)
     st.markdown("---")
     
@@ -201,7 +202,7 @@ with st.sidebar:
         max_value=0.70,
         value=0.50,
         step=0.02,
-        help="Cutoff probability for classifying an employee as Attrition Risk. Default is 0.50 (balanced) or 0.42 (high recall)."
+        help="Cutoff probability for classifying an employee as Attrition Risk. Default is 0.50."
     )
     if threshold < 0.45:
         st.caption("🟡 **High Sensitivity Mode:** Flags emerging risk early.")
@@ -219,7 +220,7 @@ st.markdown("""
     <span class="badge-pill">Production Analytics Engine</span>
     <h1 class="hero-title">AttritionIQ — Single Employee Risk Assessment</h1>
     <p class="hero-subtitle">
-        Intelligent employee attrition risk prediction powered by our final validated Random Forest model.
+        Intelligent employee attrition risk prediction powered by our final validated Logistic Regression model.
     </p>
 </div>
 """, unsafe_allow_html=True)

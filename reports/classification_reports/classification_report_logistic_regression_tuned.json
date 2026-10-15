@@ -1,7 +1,7 @@
 {
-    "model_name": "Logistic Regression (Tuned)",
-    "display_name": "Logistic Regression (Tuned & Calibrated)",
+    "model_name": "Logistic Regression (Tuned & Calibrated)",
     "short_name": "logistic_regression_tuned",
+    "test_sample_size": 294,
     "best_hyperparameters": {
         "C": 0.05,
         "class_weight": {
@@ -13,9 +13,7 @@
     },
     "best_cv_f1": 0.589565899768147,
     "metrics_summary": {
-        "train_accuracy": 0.8690476190476191,
         "test_accuracy": 0.8367346938775511,
-        "accuracy_gap_percent": 3.2312925170068008,
         "test_roc_auc": 0.7993797915410458,
         "precision_attrition_yes": 0.49019607843137253,
         "recall_attrition_yes": 0.5319148936170213,
@@ -53,6 +51,5 @@
             "f1-score": 0.8394002498958768,
             "support": 294.0
         }
-    },
-    "raw_text_report": "              precision    recall  f1-score   support\n\nRetained (0)     0.9095    0.8947    0.9020       247\nDeparted (1)     0.4902    0.5319    0.5102        47\n\n    accuracy                         0.8367       294\n   macro avg     0.6998    0.7133    0.7061       294\nweighted avg     0.8424    0.8367    0.8394       294\n"
+    }
 }

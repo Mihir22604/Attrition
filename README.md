@@ -78,7 +78,7 @@ An enterprise-grade, end-to-end Machine Learning system and interactive web appl
   - `eda_analysis.py` — Task 3: Bivariate analysis and visual figure suite generation.
   - `preprocessor.py` — Task 4: ColumnTransformer pipeline, scaling, OHE, stratified split.
   - `model_trainer.py` — Tasks 5 & 6: Baseline model training and evaluation.
-  - `tune_all_models.py` — Tasks 7 & 8: Permutation importance, Stratified 5-Fold grid tuning for all models, classification reports.
+  - `task7_task8_runner.py` — Tasks 7 & 8: Feature importance (MDI/PFI), Stratified 5-Fold grid tuning for RF & LR, post-tuning classification reports, and production pipeline serialization.
   - `build_notebook.py` — Assembles the master Jupyter Notebook.
 - **`models/`**: Joblib serialized models, including the unified production pipeline `attrition_model_pipeline.joblib`.
 - **`reports/figures/`**: 13 high-resolution visualization charts generated during analysis.

@@ -157,7 +157,7 @@ class PredictionResponse(BaseModel):
     decision_threshold: float = Field(description="Operating decision threshold used to classify risk")
     risk_factors: List[str] = Field(description="Specific empirical risk signals detected in the profile")
     recommended_action: str = Field(description="Recommended human-in-the-loop retention action")
-    model_version: str = Field(default="RandomForest_Tuned_v2.0", description="Model architecture identifier")
+    model_version: str = Field(default="LogisticRegression_Tuned_v2.0", description="Model architecture identifier")
 
 
 # ------------------------------------------------------------------------------
@@ -294,7 +294,7 @@ def predict_attrition(
             decision_threshold=threshold,
             risk_factors=risk_factors,
             recommended_action=recommended_action,
-            model_version="RandomForest_Tuned_v2.0"
+            model_version="LogisticRegression_Tuned_v2.0"
         )
     except Exception as e:
         raise HTTPException(

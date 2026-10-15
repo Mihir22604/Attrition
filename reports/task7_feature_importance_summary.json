@@ -3,187 +3,187 @@
     "top_10_mdi": [
         {
             "feature": "MonthlyIncome",
-            "mdi_importance": 0.07566636971444347,
-            "mdi_std": 0.052439836881307524,
+            "mdi_importance": 0.07938895104678743,
+            "mdi_std": 0.05267868757200677,
             "rank_mdi": 1
         },
         {
             "feature": "Age",
-            "mdi_importance": 0.07310406057120135,
-            "mdi_std": 0.051169363039514325,
+            "mdi_importance": 0.06745419345520155,
+            "mdi_std": 0.044816825767154365,
             "rank_mdi": 2
         },
         {
-            "feature": "TotalWorkingYears",
-            "mdi_importance": 0.07114091985950757,
-            "mdi_std": 0.05889860413312225,
+            "feature": "OverTime_Yes",
+            "mdi_importance": 0.06657317156002433,
+            "mdi_std": 0.03982097307287202,
             "rank_mdi": 3
         },
         {
-            "feature": "OverTime_Yes",
-            "mdi_importance": 0.054711681834352294,
-            "mdi_std": 0.04091564184024222,
+            "feature": "TotalWorkingYears",
+            "mdi_importance": 0.061929264871626526,
+            "mdi_std": 0.058087962066617475,
             "rank_mdi": 4
         },
         {
             "feature": "YearsAtCompany",
-            "mdi_importance": 0.049704074989356736,
-            "mdi_std": 0.04585914293767562,
+            "mdi_importance": 0.0612279310129065,
+            "mdi_std": 0.054748801672371235,
             "rank_mdi": 5
         },
         {
             "feature": "DailyRate",
-            "mdi_importance": 0.04779444478987033,
-            "mdi_std": 0.030364004692635692,
+            "mdi_importance": 0.047950384936798575,
+            "mdi_std": 0.027345190558965712,
             "rank_mdi": 6
         },
         {
             "feature": "YearsWithCurrManager",
-            "mdi_importance": 0.044888908137431835,
-            "mdi_std": 0.05214415845240947,
+            "mdi_importance": 0.047895685077671016,
+            "mdi_std": 0.045849423793008486,
             "rank_mdi": 7
         },
         {
-            "feature": "StockOptionLevel",
-            "mdi_importance": 0.04219084980618225,
-            "mdi_std": 0.035266147288575724,
+            "feature": "NumCompaniesWorked",
+            "mdi_importance": 0.042345958106527436,
+            "mdi_std": 0.028649827318360247,
             "rank_mdi": 8
         },
         {
-            "feature": "NumCompaniesWorked",
-            "mdi_importance": 0.039845927997177205,
-            "mdi_std": 0.029599843445197574,
+            "feature": "StockOptionLevel",
+            "mdi_importance": 0.04039283386914635,
+            "mdi_std": 0.037001739004000896,
             "rank_mdi": 9
         },
         {
             "feature": "HourlyRate",
-            "mdi_importance": 0.03816265090888295,
-            "mdi_std": 0.02395979471008504,
+            "mdi_importance": 0.03825556810201685,
+            "mdi_std": 0.023789548615311205,
             "rank_mdi": 10
         }
     ],
     "top_10_parent_mdi": [
         {
             "parent_feature": "MonthlyIncome",
-            "mdi_importance": 0.07566636971444347,
+            "mdi_importance": 0.07938895104678743,
             "rank_parent_mdi": 1
         },
         {
             "parent_feature": "Age",
-            "mdi_importance": 0.07310406057120135,
+            "mdi_importance": 0.06745419345520155,
             "rank_parent_mdi": 2
         },
         {
-            "parent_feature": "TotalWorkingYears",
-            "mdi_importance": 0.07114091985950757,
+            "parent_feature": "OverTime",
+            "mdi_importance": 0.06657317156002433,
             "rank_parent_mdi": 3
         },
         {
-            "parent_feature": "OverTime",
-            "mdi_importance": 0.054711681834352294,
+            "parent_feature": "TotalWorkingYears",
+            "mdi_importance": 0.061929264871626526,
             "rank_parent_mdi": 4
         },
         {
             "parent_feature": "YearsAtCompany",
-            "mdi_importance": 0.049704074989356736,
+            "mdi_importance": 0.0612279310129065,
             "rank_parent_mdi": 5
         },
         {
             "parent_feature": "JobRole",
-            "mdi_importance": 0.04944612445695927,
+            "mdi_importance": 0.04914885667012342,
             "rank_parent_mdi": 6
         },
         {
             "parent_feature": "DailyRate",
-            "mdi_importance": 0.04779444478987033,
+            "mdi_importance": 0.047950384936798575,
             "rank_parent_mdi": 7
         },
         {
             "parent_feature": "YearsWithCurrManager",
-            "mdi_importance": 0.044888908137431835,
+            "mdi_importance": 0.047895685077671016,
             "rank_parent_mdi": 8
         },
         {
-            "parent_feature": "StockOptionLevel",
-            "mdi_importance": 0.04219084980618225,
+            "parent_feature": "NumCompaniesWorked",
+            "mdi_importance": 0.042345958106527436,
             "rank_parent_mdi": 9
         },
         {
-            "parent_feature": "NumCompaniesWorked",
-            "mdi_importance": 0.039845927997177205,
+            "parent_feature": "StockOptionLevel",
+            "mdi_importance": 0.04039283386914635,
             "rank_parent_mdi": 10
         }
     ],
     "top_10_permutation_roc_auc": [
         {
             "feature": "OverTime_Yes",
-            "perm_auc_mean": 0.07375312257731073,
-            "perm_auc_std": 0.011409140068305347,
+            "perm_auc_mean": 0.08888793177706952,
+            "perm_auc_std": 0.01173245060510024,
             "rank_perm_auc": 1,
-            "rank_mdi": 4
-        },
-        {
-            "feature": "StockOptionLevel",
-            "perm_auc_mean": 0.026513911620294615,
-            "perm_auc_std": 0.01035669405313311,
-            "rank_perm_auc": 2,
-            "rank_mdi": 8
+            "rank_mdi": 3
         },
         {
             "feature": "JobSatisfaction",
-            "perm_auc_mean": 0.014195882504953055,
-            "perm_auc_std": 0.006496902665961228,
-            "rank_perm_auc": 3,
-            "rank_mdi": 17
-        },
-        {
-            "feature": "MaritalStatus_Single",
-            "perm_auc_mean": 0.012740115427685411,
-            "perm_auc_std": 0.0039030004897830516,
-            "rank_perm_auc": 4,
-            "rank_mdi": 24
-        },
-        {
-            "feature": "DistanceFromHome",
-            "perm_auc_mean": 0.009819967266775791,
-            "perm_auc_std": 0.005551792264266642,
-            "rank_perm_auc": 5,
-            "rank_mdi": 11
-        },
-        {
-            "feature": "EnvironmentSatisfaction",
-            "perm_auc_mean": 0.0096692221552244,
-            "perm_auc_std": 0.006036438212515973,
-            "rank_perm_auc": 6,
-            "rank_mdi": 18
-        },
-        {
-            "feature": "PercentSalaryHike",
-            "perm_auc_mean": 0.007007494185545737,
-            "perm_auc_std": 0.003437007433684456,
-            "rank_perm_auc": 7,
+            "perm_auc_mean": 0.01891635799810491,
+            "perm_auc_std": 0.006704464384766795,
+            "rank_perm_auc": 2,
             "rank_mdi": 15
         },
         {
-            "feature": "TrainingTimesLastYear",
-            "perm_auc_mean": 0.006107330519424592,
-            "perm_auc_std": 0.0027014078840587553,
+            "feature": "StockOptionLevel",
+            "perm_auc_mean": 0.014109742441209383,
+            "perm_auc_std": 0.008189179606866607,
+            "rank_perm_auc": 3,
+            "rank_mdi": 9
+        },
+        {
+            "feature": "EnvironmentSatisfaction",
+            "perm_auc_mean": 0.009540012059608916,
+            "perm_auc_std": 0.005844263706192188,
+            "rank_perm_auc": 4,
+            "rank_mdi": 14
+        },
+        {
+            "feature": "MaritalStatus_Single",
+            "perm_auc_mean": 0.008273753122577276,
+            "perm_auc_std": 0.00401291370948684,
+            "rank_perm_auc": 5,
+            "rank_mdi": 22
+        },
+        {
+            "feature": "JobLevel",
+            "perm_auc_mean": 0.008114394004651544,
+            "perm_auc_std": 0.008401134032868199,
+            "rank_perm_auc": 6,
+            "rank_mdi": 13
+        },
+        {
+            "feature": "DistanceFromHome",
+            "perm_auc_mean": 0.007416659488328009,
+            "perm_auc_std": 0.0051147834438032575,
+            "rank_perm_auc": 7,
+            "rank_mdi": 11
+        },
+        {
+            "feature": "EducationField_Technical Degree",
+            "perm_auc_mean": 0.005435438022224159,
+            "perm_auc_std": 0.0007118422238307843,
             "rank_perm_auc": 8,
-            "rank_mdi": 20
+            "rank_mdi": 39
+        },
+        {
+            "feature": "BusinessTravel_Travel_Frequently",
+            "perm_auc_mean": 0.004035661986389855,
+            "perm_auc_std": 0.0036336687826801083,
+            "rank_perm_auc": 9,
+            "rank_mdi": 26
         },
         {
             "feature": "JobInvolvement",
-            "perm_auc_mean": 0.004845378585580174,
-            "perm_auc_std": 0.0037719980499917732,
-            "rank_perm_auc": 9,
-            "rank_mdi": 21
-        },
-        {
-            "feature": "YearsAtCompany",
-            "perm_auc_mean": 0.004031354983202684,
-            "perm_auc_std": 0.006798988903423867,
+            "perm_auc_mean": 0.0032991644413816966,
+            "perm_auc_std": 0.003406738786880495,
             "rank_perm_auc": 10,
-            "rank_mdi": 5
+            "rank_mdi": 20
         }
     ],
     "methodological_insights": {

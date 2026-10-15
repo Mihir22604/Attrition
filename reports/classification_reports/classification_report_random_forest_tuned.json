@@ -1,7 +1,7 @@
 {
-    "model_name": "Random Forest (Tuned)",
-    "display_name": "Random Forest (Tuned & Optimized)",
+    "model_name": "Random Forest (Tuned & Optimized)",
     "short_name": "random_forest_tuned",
+    "test_sample_size": 294,
     "best_hyperparameters": {
         "class_weight": "balanced",
         "max_depth": 10,
@@ -11,9 +11,7 @@
     },
     "best_cv_f1": 0.5044865689921488,
     "metrics_summary": {
-        "train_accuracy": 0.9727891156462585,
         "test_accuracy": 0.8163265306122449,
-        "accuracy_gap_percent": 15.646258503401356,
         "test_roc_auc": 0.7706090102506675,
         "precision_attrition_yes": 0.42857142857142855,
         "recall_attrition_yes": 0.44680851063829785,
@@ -51,6 +49,5 @@
             "f1-score": 0.8178664758586361,
             "support": 294.0
         }
-    },
-    "raw_text_report": "              precision    recall  f1-score   support\n\nRetained (0)     0.8939    0.8866    0.8902       247\nDeparted (1)     0.4286    0.4468    0.4375        47\n\n    accuracy                         0.8163       294\n   macro avg     0.6612    0.6667    0.6639       294\nweighted avg     0.8195    0.8163    0.8179       294\n"
+    }
 }

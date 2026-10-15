@@ -30,7 +30,7 @@ def test_health_endpoint():
     data = response.json()
     assert data["status"] == "healthy"
     assert data["model_loaded"] is True
-    assert data["model_type"] == "RandomForestClassifier"
+    assert data["model_type"] == "LogisticRegression"
     assert data["classes"] == [0, 1]
 
 

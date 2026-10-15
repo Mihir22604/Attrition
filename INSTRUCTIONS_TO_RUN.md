@@ -89,8 +89,8 @@ AttritionIQ — Intelligent Employee Attrition Prediction System/
 │       └── fitted_preprocessor.joblib     # Fitted ColumnTransformer pipeline component
 │
 ├── models/
-│   ├── attrition_model_pipeline.joblib    # PRODUCTION UNIFIED PIPELINE (Preprocessor + Tuned RF)
-│   ├── attrition_logistic_pipeline.joblib # BENCHMARK LINEAR PIPELINE (Preprocessor + Tuned LR)
+│   ├── attrition_model_pipeline.joblib    # PRODUCTION UNIFIED PIPELINE (Preprocessor + Tuned LR)
+│   ├── attrition_logistic_pipeline.joblib # PRODUCTION LINEAR PIPELINE (Preprocessor + Tuned LR)
 │   ├── decision_tree_baseline.joblib      # Baseline Decision Tree model
 │   ├── random_forest_baseline.joblib      # Baseline Random Forest model
 │   ├── logistic_regression_baseline.joblib# Baseline Logistic Regression model
@@ -120,8 +120,7 @@ AttritionIQ — Intelligent Employee Attrition Prediction System/
 │   ├── eda_analysis.py                    # Task 3: Bivariate analysis & visual suite generation
 │   ├── preprocessor.py                    # Task 4: Pipeline construction, OHE & train/test split
 │   ├── model_trainer.py                   # Tasks 5 & 6: Training baselines & metric evaluations
-│   ├── task7_task8_runner.py              # Tasks 7 & 8: MDI, permutation importance & RF tuning
-│   ├── tune_all_models.py                 # Task 8: Stratified 5-Fold grid tuning for DT, RF, LR
+│   ├── task7_task8_runner.py              # Tasks 7 & 8: Feature importance, tuning (RF & LR), evaluation reports & production pipeline
 │   └── build_notebook.py                  # Generates AttritionIQ_Workflow.ipynb automatically
 │
 ├── notebooks/
@@ -182,11 +181,11 @@ python src/model_trainer.py
 *Output: Baseline models saved in `models/`, Figure `09_model_roc_curves.png`.*
 
 ### Step 4.6: Tasks 7 & 8 — Feature Importance & Comprehensive Hyperparameter Tuning
-Performs MDI and test permutation importance analysis, executes Stratified 5-Fold Grid Search CV for Decision Tree, Random Forest, and Logistic Regression, prints comprehensive classification reports, and bundles unified production pipelines:
+Performs MDI and test permutation importance analysis, executes Stratified 5-Fold Grid Search CV for Random Forest and Logistic Regression, generates combined before/after classification reports, confusion matrices, ROC curves, and bundles the champion Logistic Regression production pipeline:
 ```powershell
-python src/tune_all_models.py
+python src/task7_task8_runner.py
 ```
-*Output: Tuned models, Figures `10`, `11`, `12`, `13`, and unified pipeline `models/attrition_model_pipeline.joblib`.*
+*Output: Tuned models (`models/logistic_regression_tuned.joblib`, `models/random_forest_tuned.joblib`), evaluation figures, combined classification report, and production pipeline `models/attrition_model_pipeline.joblib`.*
 
 ### Step 4.7: Build the Master Jupyter Notebook
 Assembles the complete end-to-end reproducible Jupyter Notebook from the verified modules:
@@ -263,8 +262,8 @@ streamlit run app.py
 The user interface is designed specifically for clean, focused presentations and intuitive employee risk evaluation:
 
 ### 1. Final Production Model (Single Champion Architecture)
-- The application automatically runs on our top-performing champion architecture: **Tuned Random Forest Pipeline** (`models/attrition_model_pipeline.joblib`).
-- Validated performance: **82.65% Test Accuracy**, **0.7638 ROC-AUC**, and the lowest false-alarm rate among non-linear models.
+- The application automatically runs on our top-performing champion architecture: **Tuned Logistic Regression Pipeline** (`models/attrition_model_pipeline.joblib`).
+- Validated performance: **83.67% Test Accuracy**, **0.7994 ROC-AUC**, **53.19% Minority Recall**, and **0.5102 F1-Score**.
 
 ### 2. Streamlined Employee Profile Inputs
 - **Primary Business Drivers (Clean 2-Column Grid):**
